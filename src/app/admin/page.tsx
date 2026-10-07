@@ -1,161 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect,useMemo,useState } from "react";
 import AdminGate from "@/app/admin/admin-gate";
-import { deleteOfferingRecord, getBookingRequests, getOfferings, getSpecials, saveOfferingRecord, saveSpecialRecord, updateBookingStatus, type BookingRequestRecord, type OfferingRecord, type SpecialRecord } from "@/lib/firebase/data";
+import { deleteProductRecord,deleteServiceRecord,getBookingRequests,getProducts,getServices,saveProductRecord,saveServiceRecord,updateBookingStatus,updatePaymentStatus,type BookingRequestRecord,type BookingStatus,type PaymentStatus,type ProductRecord,type ServiceRecord } from "@/lib/firebase/data";
+import { trippleSProductSeed,trippleSServiceSeed } from "@/lib/tripple-s/catalog";
 
-function AdminDashboard() {
-  const [tab, setTab] = useState<"requests" | "offerings" | "specials">("requests");
-  const [bookings, setBookings] = useState<BookingRequestRecord[]>([]);
-  const [offerings, setOfferings] = useState<OfferingRecord[]>([]);
-  const [specials, setSpecials] = useState<SpecialRecord[]>([]);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"all" | "new" | "upcoming">("all");
-  const [draft, setDraft] = useState<OfferingRecord | null>(null);
-  const [specialDraft, setSpecialDraft] = useState<SpecialRecord | null>(null);
-  const [notice, setNotice] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [busyAction, setBusyAction] = useState("");
+function Dashboard(){
+ const [tab,setTab]=useState<"requests"|"services"|"products">("requests"); const [requests,setRequests]=useState<BookingRequestRecord[]>([]); const [services,setServices]=useState<ServiceRecord[]>([]); const [products,setProducts]=useState<ProductRecord[]>([]);
+ const [selected,setSelected]=useState<string|null>(null); const [loading,setLoading]=useState(true); const [notice,setNotice]=useState(""); const [busy,setBusy]=useState("");
+ const [serviceDraft,setServiceDraft]=useState<ServiceRecord|null>(null); const [productDraft,setProductDraft]=useState<ProductRecord|null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    void Promise.all([getBookingRequests(), getOfferings(), getSpecials()]).then(([requests, menu, offers]) => {
-      if (cancelled) return;
-      setBookings(requests);
-      setOfferings(menu);
-      setSpecials(offers);
-    }).catch(() => {
-      if (!cancelled) setNotice("Operations data could not be loaded. Check Firebase access.");
-    }).finally(() => {
-      if (!cancelled) setLoading(false);
-    });
-    return () => { cancelled = true; };
-  }, []);
+ useEffect(()=>{let cancelled=false;void Promise.all([getBookingRequests(),getServices(),getProducts()]).then(([r,s,p])=>{if(cancelled)return;setRequests(r);setServices(s);setProducts(p);}).catch(()=>!cancelled&&setNotice("Operations data could not be loaded. Check Firebase access.")).finally(()=>!cancelled&&setLoading(false));return()=>{cancelled=true;}},[]);
+ const counts=useMemo(()=>({total:requests.length,new:requests.filter(x=>x.status==="NEW").length,confirmed:requests.filter(x=>x.status==="CONFIRMED").length,payment:requests.filter(x=>x.paymentStatus!=="PAID"&&x.status!=="CANCELLED").length}),[requests]);
+ const current=requests.find(x=>x.id===selected)??null;
 
-  const today = new Date().toISOString().slice(0, 10);
-  const counts = useMemo(() => ({
-    total: bookings.length,
-    new: bookings.filter((item) => item.status === "New").length,
-    confirmed: bookings.filter((item) => item.status === "Confirmed").length,
-    upcoming: bookings.filter((item) => Boolean(item.date) && String(item.date) >= today && item.status !== "Cancelled").length,
-  }), [bookings, today]);
+ async function seedCatalogue(){setBusy("seed");try{for(const item of trippleSServiceSeed)await saveServiceRecord(item);for(const item of trippleSProductSeed)await saveProductRecord(item);setServices(trippleSServiceSeed);setProducts(trippleSProductSeed);setNotice("Tripple S catalogue published to Firebase.");}catch{setNotice("Catalogue could not be published. Check Firebase permissions.")}finally{setBusy("")}}
+ async function status(id:string,status:BookingStatus){setBusy(id);try{await updateBookingStatus(id,status);setRequests(items=>items.map(x=>x.id===id?{...x,status}:x));setNotice("Appointment request updated.");}catch{setNotice("The appointment status could not be updated.")}finally{setBusy("")}}
+ async function payment(id:string,paymentStatus:PaymentStatus){setBusy(id);try{await updatePaymentStatus(id,paymentStatus);setRequests(items=>items.map(x=>x.id===id?{...x,paymentStatus}:x));setNotice("Payment status updated.");}catch{setNotice("Payment status could not be updated.")}finally{setBusy("")}}
+ async function saveService(){if(!serviceDraft)return;setBusy(serviceDraft.id);try{await saveServiceRecord(serviceDraft);setServices(items=>items.some(x=>x.id===serviceDraft.id)?items.map(x=>x.id===serviceDraft.id?serviceDraft:x):[...items,serviceDraft]);setServiceDraft(null);setNotice("Service saved.");}catch{setNotice("Service could not be saved.")}finally{setBusy("")}}
+ async function saveProduct(){if(!productDraft)return;setBusy(productDraft.id);try{await saveProductRecord(productDraft);setProducts(items=>items.some(x=>x.id===productDraft.id)?items.map(x=>x.id===productDraft.id?productDraft:x):[...items,productDraft]);setProductDraft(null);setNotice("Product saved.");}catch{setNotice("Product could not be saved.")}finally{setBusy("")}}
 
-  const visible = useMemo(() => {
-    const filtered = bookings.filter((item) => filter === "new"
-      ? item.status === "New"
-      : filter === "upcoming"
-        ? Boolean(item.date) && String(item.date) >= today && item.status !== "Cancelled"
-        : true);
-    return [...filtered].sort((a, b) => {
-      const aDate = String(a.date ?? "");
-      const bDate = String(b.date ?? "");
-      if (filter === "upcoming") return aDate.localeCompare(bDate) || b.createdAt.localeCompare(a.createdAt);
-      return b.createdAt.localeCompare(a.createdAt) || bDate.localeCompare(aDate);
-    });
-  }, [bookings, filter, today]);
-
-  const current = bookings.find((item) => item.id === selected) ?? null;
-
-  async function changeStatus(id: string, status: BookingRequestRecord["status"]) {
-    setBusyAction(`status:${id}`);
-    try {
-      await updateBookingStatus(id, status);
-      setBookings((items) => items.map((item) => item.id === id ? { ...item, status } : item));
-      setNotice(`Request marked ${status.toLowerCase()}.`);
-    } catch {
-      setNotice("The request status could not be updated. Please try again.");
-    } finally {
-      setBusyAction("");
-    }
-  }
-
-  function startOffering(item?: OfferingRecord) {
-    setDraft(item ? { ...item } : { id: crypto.randomUUID(), name: "", category: "Food", detail: "", price: "", active: true });
-  }
-
-  async function saveOffering() {
-    if (!draft?.name.trim() || !draft.detail.trim()) return;
-    const item = draft;
-    setBusyAction(`offering:${item.id}`);
-    try {
-      await saveOfferingRecord(item);
-      setOfferings((items) => items.some((entry) => entry.id === item.id) ? items.map((entry) => entry.id === item.id ? item : entry) : [...items, item]);
-      setDraft(null);
-      setNotice("Offering saved.");
-    } catch {
-      setNotice("The offering could not be saved. Please try again.");
-    } finally {
-      setBusyAction("");
-    }
-  }
-
-  async function toggleOffering(item: OfferingRecord) {
-    const next = { ...item, active: !item.active };
-    setBusyAction(`offering:${item.id}`);
-    try {
-      await saveOfferingRecord(next);
-      setOfferings((items) => items.map((entry) => entry.id === item.id ? next : entry));
-      setNotice(`${item.name} is now ${next.active ? "visible" : "hidden"}.`);
-    } catch {
-      setNotice("The offering visibility could not be changed.");
-    } finally {
-      setBusyAction("");
-    }
-  }
-
-  async function removeOffering(id: string) {
-    setBusyAction(`delete:${id}`);
-    try {
-      await deleteOfferingRecord(id);
-      setOfferings((items) => items.filter((item) => item.id !== id));
-      setNotice("Offering removed.");
-    } catch {
-      setNotice("The offering could not be removed.");
-    } finally {
-      setBusyAction("");
-    }
-  }
-
-  async function saveSpecial() {
-    if (!specialDraft?.title.trim() || !specialDraft.detail.trim()) return;
-    const item = specialDraft;
-    setBusyAction(`special:${item.id}`);
-    try {
-      await saveSpecialRecord(item);
-      setSpecials((items) => items.some((entry) => entry.id === item.id) ? items.map((entry) => entry.id === item.id ? item : entry) : [...items, item]);
-      setSpecialDraft(null);
-      setNotice("Special saved.");
-    } catch {
-      setNotice("The special could not be saved. Please try again.");
-    } finally {
-      setBusyAction("");
-    }
-  }
-
-  async function toggleSpecial(item: SpecialRecord) {
-    const next = { ...item, active: !item.active };
-    setBusyAction(`special:${item.id}`);
-    try {
-      await saveSpecialRecord(next);
-      setSpecials((items) => items.map((entry) => entry.id === item.id ? next : entry));
-      setNotice(`${item.title} is now ${next.active ? "active" : "hidden"}.`);
-    } catch {
-      setNotice("The special visibility could not be changed.");
-    } finally {
-      setBusyAction("");
-    }
-  }
-
-  return <main className="adminPage"><div className="adminShell">
-    <header className="adminHeader"><div><span className="kicker">THE MEATING PLACE · Operations</span><h1>Keep the place moving.</h1><p>Requests, offerings and specials in one working queue.</p></div><div className="adminHeaderActions"><Link href="/" className="button buttonLight">View public site</Link><Link href="/book" className="button buttonPrimary">Open request form</Link></div></header>
-    <section className="adminStats"><article><span>Total requests</span><strong>{loading ? "—" : counts.total}</strong></article><article><span>New</span><strong>{loading ? "—" : counts.new}</strong></article><article><span>Confirmed</span><strong>{loading ? "—" : counts.confirmed}</strong></article><article><span>Upcoming</span><strong>{loading ? "—" : counts.upcoming}</strong></article></section>
-    <nav className="adminTabs" aria-label="Operations sections"><button className={tab === "requests" ? "active" : ""} onClick={() => setTab("requests")}>Requests</button><button className={tab === "offerings" ? "active" : ""} onClick={() => setTab("offerings")}>Offerings</button><button className={tab === "specials" ? "active" : ""} onClick={() => setTab("specials")}>Specials</button></nav>
-    {notice && <div className="adminToast" role="status">{notice}</div>}
-    {tab === "requests" && <section className="adminContent twoColumn"><div className="adminPanel"><div className="panelHeading"><div><span className="kicker">Customer queue</span><h2>Requests</h2></div><span>{loading ? "Loading…" : `${bookings.length} total`}</span></div><div className="adminFilters"><button className={filter === "all" ? "active" : ""} onClick={() => setFilter("all")}>All</button><button className={filter === "new" ? "active" : ""} onClick={() => setFilter("new")}>New ({counts.new})</button><button className={filter === "upcoming" ? "active" : ""} onClick={() => setFilter("upcoming")}>Upcoming ({counts.upcoming})</button></div>{loading ? <div className="emptyState"><div>⏳</div><h3>Loading requests</h3><p>Opening the customer queue…</p></div> : visible.length === 0 ? <div className="emptyState"><div>📋</div><h3>No requests here</h3><p>{filter === "all" ? "Customer requests will appear here as soon as they are submitted." : "Nothing matches this filter right now."}</p>{filter !== "all" && <button className="button buttonLight" onClick={() => setFilter("all")}>Show all requests</button>}</div> : <div className="requestList">{visible.map((item) => <button key={item.id} className={`requestRow ${selected === item.id ? "selected" : ""}`} onClick={() => setSelected(item.id)}><div><strong>{item.name}</strong><span>{item.requestType}</span></div><div><strong>{item.date || "Flexible"}</strong><span>{item.status}</span></div></button>)}</div>}</div><div className="adminPanel detailPanel">{current ? <><div className="panelHeading"><div><span className="kicker">Request details</span><h2>{current.name}</h2></div><select disabled={busyAction === `status:${current.id}`} value={current.status} onChange={(event) => void changeStatus(current.id, event.target.value as BookingRequestRecord["status"])}><option>New</option><option>Contacted</option><option>Confirmed</option><option>Completed</option><option>Cancelled</option></select></div><dl className="detailList"><div><dt>Request</dt><dd>{current.requestType}</dd></div><div><dt>Date / time</dt><dd>{current.date || "Flexible"} · {current.startTime || "Flexible"}</dd></div><div><dt>Details</dt><dd>{current.details}</dd></div><div><dt>Notes</dt><dd>{current.notes || "No additional notes."}</dd></div><div><dt>Phone</dt><dd><a href={`tel:${current.phone}`}>{current.phone}</a></dd></div><div><dt>Email</dt><dd>{current.email || "Not provided"}</dd></div></dl><div className="actions"><a className="button buttonPrimary" href={`https://wa.me/${current.phone.replace(/\D/g, "")}`}>WhatsApp</a><a className="button buttonLight" href={`tel:${current.phone}`}>Call</a></div></> : <div className="emptyState"><div>👈</div><h3>Select a request</h3><p>Open a request to see the full customer brief and move it through the workflow.</p></div>}</div></section>}
-    {tab === "offerings" && <section className="adminContent"><div className="adminPanel"><div className="panelHeading"><div><span className="kicker">What we offer</span><h2>Offerings</h2><p>Keep the food, wash and braai catalogue ready for customers.</p></div><button className="button buttonPrimary" disabled={Boolean(busyAction)} onClick={() => startOffering()}>+ Add offering</button></div>{loading ? <div className="emptyState"><div>⏳</div><h3>Loading offerings</h3><p>Opening the catalogue…</p></div> : <div className="equipmentAdminGrid">{offerings.map((item) => { const busy = busyAction === `offering:${item.id}` || busyAction === `delete:${item.id}`; return <article key={item.id}><div><strong>{item.name}</strong><span>{item.category} · {item.detail}</span></div><b>{item.price || "Ask us"}</b><span>{item.active ? "Live" : "Hidden"}</span><div className="actions"><button className="button buttonLight" disabled={busy || Boolean(busyAction)} onClick={() => void toggleOffering(item)}>{busy ? "Saving…" : item.active ? "Hide" : "Show"}</button><button className="button buttonLight" disabled={Boolean(busyAction)} onClick={() => startOffering(item)}>Edit</button><button className="button buttonLight" disabled={busy || Boolean(busyAction)} onClick={() => void removeOffering(item.id)}>Delete</button></div></article>; })}</div>}{!loading && offerings.length === 0 && <div className="emptyState"><div>🍖</div><h3>No offerings yet</h3><p>Add the real menu, wash packages and braai options as the business defines them.</p></div>}</div>{draft && <div className="adminPanel"><div className="panelHeading"><div><span className="kicker">Catalogue</span><h2>{offerings.some((item) => item.id === draft.id) ? "Edit offering" : "Add offering"}</h2></div><button className="button buttonLight" disabled={Boolean(busyAction)} onClick={() => setDraft(null)}>Cancel</button></div><form className="adminForm" onSubmit={(event) => { event.preventDefault(); void saveOffering(); }}><label>Name<input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} required /></label><label>Category<select value={draft.category} onChange={(event) => setDraft({ ...draft, category: event.target.value as OfferingRecord["category"] })}><option>Food</option><option>Car Wash</option><option>Braai</option><option>Other</option></select></label><label>Description<input value={draft.detail} onChange={(event) => setDraft({ ...draft, detail: event.target.value })} required /></label><label>Price / starting price<input value={draft.price ?? ""} onChange={(event) => setDraft({ ...draft, price: event.target.value })} /></label><label><input type="checkbox" checked={draft.active} onChange={(event) => setDraft({ ...draft, active: event.target.checked })} /> Visible to customers</label><button className="button buttonPrimary" type="submit" disabled={Boolean(busyAction)}>{busyAction ? "Saving…" : "Save offering"}</button></form></div>}</section>}
-    {tab === "specials" && <section className="adminContent twoColumn"><div className="adminPanel"><div className="panelHeading"><div><span className="kicker">Live promotions</span><h2>Specials</h2></div><span>{loading ? "Loading…" : `${specials.filter((item) => item.active).length} active`}</span></div>{loading ? <div className="emptyState"><div>⏳</div><h3>Loading specials</h3><p>Opening promotions…</p></div> : specials.length === 0 ? <div className="emptyState"><div>🔥</div><h3>No specials yet</h3><p>Add a real offer when there is something worth putting in front of customers.</p></div> : <div className="specialList">{specials.map((item) => { const busy = busyAction === `special:${item.id}`; return <article key={item.id}><div><strong>{item.title}</strong><p>{item.detail}</p></div><div className="actions"><button className="button buttonLight" disabled={busy || Boolean(busyAction)} onClick={() => void toggleSpecial(item)}>{busy ? "Saving…" : item.active ? "Active" : "Hidden"}</button><button className="button buttonLight" disabled={Boolean(busyAction)} onClick={() => setSpecialDraft(item)}>Edit</button></div></article>; })}</div>}</div><div className="adminPanel"><div className="panelHeading"><div><span className="kicker">Create</span><h2>{specialDraft ? "Edit special" : "Add a special"}</h2></div></div><form className="adminForm" onSubmit={(event) => { event.preventDefault(); void saveSpecial(); }}><label>Title<input value={specialDraft?.title ?? ""} onChange={(event) => setSpecialDraft((current) => ({ id: current?.id ?? crypto.randomUUID(), title: event.target.value, detail: current?.detail ?? "", active: current?.active ?? true }))} placeholder="e.g. Saturday Braai Special" required /></label><label>Detail<textarea value={specialDraft?.detail ?? ""} onChange={(event) => setSpecialDraft((current) => ({ id: current?.id ?? crypto.randomUUID(), title: current?.title ?? "", detail: event.target.value, active: current?.active ?? true }))} required /></label><label>Offer wording<input value={specialDraft?.offer ?? ""} onChange={(event) => setSpecialDraft((current) => ({ id: current?.id ?? crypto.randomUUID(), title: current?.title ?? "", detail: current?.detail ?? "", active: current?.active ?? true, offer: event.target.value }))} /></label><button className="button buttonPrimary" type="submit" disabled={Boolean(busyAction)}>{busyAction ? "Saving…" : "Save special"}</button>{specialDraft && <button className="button buttonLight" type="button" disabled={Boolean(busyAction)} onClick={() => setSpecialDraft(null)}>Clear</button>}</form></div></section>}
-  </div></main>;
+ return <main className="adminPage"><div className="adminShell">
+  <header className="adminHeader"><div><span className="kicker">TRIPPLE S · OPERATIONS</span><h1>Keep client care moving.</h1><p>Appointment requests, payment states and the live catalogue in one working surface.</p></div><div className="adminHeaderActions"><Link href="/" className="button buttonLight">View public site</Link><Link href="/book" className="button buttonPrimary">Open booking</Link></div></header>
+  <section className="adminStats"><article><span>Total requests</span><strong>{loading?"—":counts.total}</strong></article><article><span>New</span><strong>{loading?"—":counts.new}</strong></article><article><span>Confirmed</span><strong>{loading?"—":counts.confirmed}</strong></article><article><span>Payment pending</span><strong>{loading?"—":counts.payment}</strong></article></section>
+  <nav className="adminTabs"><button className={tab==="requests"?"active":""} onClick={()=>setTab("requests")}>Requests</button><button className={tab==="services"?"active":""} onClick={()=>setTab("services")}>Services</button><button className={tab==="products"?"active":""} onClick={()=>setTab("products")}>Products</button></nav>
+  {notice&&<div className="adminToast">{notice}</div>}
+  {tab==="requests"&&<section className="adminContent twoColumn"><div className="adminPanel"><div className="panelHeading"><div><span className="kicker">Client queue</span><h2>Appointment requests</h2></div><span>{requests.length} total</span></div>{loading?<div className="emptyState"><h3>Loading requests</h3></div>:requests.length===0?<div className="emptyState"><h3>No appointment requests yet</h3><p>New requests will appear here after clients submit the public form.</p></div>:<div className="requestList">{requests.map(item=><button key={item.id} className={`requestRow ${selected===item.id?"selected":""}`} onClick={()=>setSelected(item.id)}><div><strong>{item.name}</strong><span>{item.serviceNameSnapshot}</span></div><div><strong>{item.preferredDate||"Flexible"}</strong><span>{item.status}</span></div></button>)}</div>}</div><div className="adminPanel">{current?<><div className="panelHeading"><div><span className="kicker">Request details</span><h2>{current.name}</h2></div><select value={current.status} disabled={busy===current.id} onChange={e=>void status(current.id,e.target.value as BookingStatus)}><option>NEW</option><option>REVIEWING</option><option>APPROVED</option><option>PAYMENT_PENDING</option><option>CONFIRMED</option><option>ARRIVED</option><option>COMPLETED</option><option>NEEDS_CONTACT</option><option>RESCHEDULED</option><option>CANCELLED</option><option>NO_SHOW</option><option>FOLLOW_UP</option><option>DECLINED</option></select></div><dl className="detailList"><div><dt>Service</dt><dd>{current.serviceNameSnapshot}</dd></div><div><dt>Date / time</dt><dd>{current.preferredDate||"Flexible"} · {current.preferredTime||"Flexible"}</dd></div><div><dt>Client</dt><dd>{current.clientType}</dd></div><div><dt>Message</dt><dd>{current.message||"No message."}</dd></div><div><dt>Phone</dt><dd><a href={`tel:${current.phone}`}>{current.phone}</a></dd></div><div><dt>Payment</dt><dd><select value={current.paymentStatus} onChange={e=>void payment(current.id,e.target.value as PaymentStatus)}><option>PAYMENT_PENDING</option><option>PAYMENT_INSTRUCTIONS</option><option>PAYMENT_PROOF_SUBMITTED</option><option>PAYMENT_VERIFIED</option><option>PAID</option><option>REFUNDED</option></select></dd></div></dl><div className="actions"><a className="button buttonPrimary" href={`https://wa.me/${current.phone.replace(/\D/g,"")}`}>WhatsApp</a><a className="button buttonLight" href={`tel:${current.phone}`}>Call</a></div></>:<div className="emptyState"><h3>Select a request</h3><p>Open an appointment request to review it and move it through the workflow.</p></div>}</div></section>}
+  {tab==="services"&&<section className="adminContent"><div className="adminPanel"><div className="panelHeading"><div><span className="kicker">Catalogue</span><h2>Services</h2><p>Prices, durations and visibility are managed here.</p></div><div className="actions"><button className="button buttonLight" disabled={busy==="seed"} onClick={()=>void seedCatalogue()}>{busy==="seed"?"Publishing…":"Publish current Tripple S catalogue"}</button><button className="button buttonPrimary" onClick={()=>setServiceDraft({id:crypto.randomUUID(),name:"",category:"Skin Treatments",description:"",price:"",duration:"",active:true})}>+ Add service</button></div></div>{services.length===0?<div className="seedBox"><strong>No services are published yet.</strong><p>Use the publish button once to load the current client-approved Tripple S catalogue into Firebase. After that, staff can edit individual services here.</p></div>:<div className="serviceAdminGrid">{services.map(item=><article key={item.id}><div><strong>{item.name}</strong><span>{item.category} · {item.duration}</span></div><b>{item.price}</b><span>{item.active?"Live":"Hidden"}</span><div className="actions"><button className="button buttonLight" onClick={()=>setServiceDraft(item)}>Edit</button><button className="button buttonLight" disabled={busy===item.id} onClick={async()=>{setBusy(item.id);try{await deleteServiceRecord(item.id);setServices(xs=>xs.filter(x=>x.id!==item.id));setNotice("Service removed.");}catch{setNotice("Service could not be removed.")}finally{setBusy("")}}}>Delete</button></div></article>)}</div>}</div>{serviceDraft&&<div className="adminPanel"><form className="adminForm" onSubmit={e=>{e.preventDefault();void saveService()}}><label>Name<input value={serviceDraft.name} onChange={e=>setServiceDraft({...serviceDraft,name:e.target.value})} required/></label><label>Category<select value={serviceDraft.category} onChange={e=>setServiceDraft({...serviceDraft,category:e.target.value as ServiceRecord["category"]})}><option>IV Wellness Drips</option><option>Medical Aesthetics</option><option>Skin Treatments</option><option>Body Contouring</option><option>Wellness</option><option>Consultations</option></select></label><label>Description<textarea value={serviceDraft.description} onChange={e=>setServiceDraft({...serviceDraft,description:e.target.value})} required/></label><label>Price<input value={serviceDraft.price} onChange={e=>setServiceDraft({...serviceDraft,price:e.target.value})} required/></label><label>Duration<input value={serviceDraft.duration} onChange={e=>setServiceDraft({...serviceDraft,duration:e.target.value})} required/></label><label><input type="checkbox" checked={serviceDraft.active} onChange={e=>setServiceDraft({...serviceDraft,active:e.target.checked})}/> Visible to clients</label><div className="actions"><button className="button buttonPrimary" type="submit" disabled={!!busy}>{busy?"Saving…":"Save service"}</button><button className="button buttonLight" type="button" onClick={()=>setServiceDraft(null)}>Cancel</button></div></form></div>}</section>}
+  {tab==="products"&&<section className="adminContent"><div className="adminPanel"><div className="panelHeading"><div><span className="kicker">Medical skincare</span><h2>Products</h2></div><button className="button buttonPrimary" onClick={()=>setProductDraft({id:crypto.randomUUID(),name:"",description:"",price:"",active:true})}>+ Add product</button></div>{products.length===0?<div className="seedBox"><strong>No products are published yet.</strong><p>Use “Publish current Tripple S catalogue” under Services to load the current skincare catalogue.</p></div>:<div className="productList">{products.map(item=><article key={item.id}><strong>{item.name}</strong><p>{item.description}</p><b>{item.price}</b><div className="actions"><button className="button buttonLight" onClick={()=>setProductDraft(item)}>Edit</button><button className="button buttonLight" onClick={async()=>{try{await deleteProductRecord(item.id);setProducts(xs=>xs.filter(x=>x.id!==item.id));setNotice("Product removed.")}catch{setNotice("Product could not be removed.")}}}>Delete</button></div></article>)}</div>}</div>{productDraft&&<div className="adminPanel"><form className="adminForm" onSubmit={e=>{e.preventDefault();void saveProduct()}}><label>Name<input value={productDraft.name} onChange={e=>setProductDraft({...productDraft,name:e.target.value})} required/></label><label>Description<textarea value={productDraft.description} onChange={e=>setProductDraft({...productDraft,description:e.target.value})} required/></label><label>Size<input value={productDraft.size??""} onChange={e=>setProductDraft({...productDraft,size:e.target.value})}/></label><label>Price<input value={productDraft.price} onChange={e=>setProductDraft({...productDraft,price:e.target.value})} required/></label><label><input type="checkbox" checked={productDraft.active} onChange={e=>setProductDraft({...productDraft,active:e.target.checked})}/> Visible to clients</label><div className="actions"><button className="button buttonPrimary" type="submit" disabled={!!busy}>{busy?"Saving…":"Save product"}</button><button className="button buttonLight" type="button" onClick={()=>setProductDraft(null)}>Cancel</button></div></form></div>}</section>}
+ </div></main>;
 }
-
-export default function AdminPage() { return <AdminGate><AdminDashboard /></AdminGate>; }
+export default function AdminPage(){return <AdminGate><Dashboard/></AdminGate>;}
