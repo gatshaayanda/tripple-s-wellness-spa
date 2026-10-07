@@ -1,19 +1,12 @@
 {
-  "name": "THE MEATING PLACE — CAR WASH & BRAAI",
-  "short_name": "Meating Place",
-  "description": "Good food, good mood. Car wash and braai at THE MEATING PLACE.",
+  "name": "Tripple S Wellness Spa",
+  "short_name": "Tripple S Spa",
+  "description": "Medical aesthetics, skin health and wellness in Gaborone.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#171512",
-  "theme_color": "#171512",
+  "background_color": "#f8f6f1",
+  "theme_color": "#171614",
   "lang": "en",
-  "icons": [
-    {
-      "src": "/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ]
+  "icons": [{"src":"/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
 }
