@@ -231,7 +231,7 @@ Do not build:
 - fake WhatsApp/SMS/email delivery
 - fabricated testimonials or availability
 
-Build the smallest useful Tripple S operating surface first, then extend it through controlled vertical slices.
+Build the smallest useful Tripple S operating surface first, then extend it through controlled vertical slices.\n\nCurrent client-side slice includes: installable PWA prompt, active-only public service reads, treatment search/category filters, treatment detail pages with safe preparation/aftercare placeholders, and clearer appointment-request entry points. Next client slices: confirmed appointment experience, authenticated/secure appointment status access, reminders, follow-up/review journey, then richer client account features only where they materially improve care.
 
 ## Checkpoints
 Every controlled change should end with:
