@@ -33,10 +33,4 @@ export const trippleSServiceSeed: ServiceSeed[] = [
   { id: "skin-consultation", name: "Skin Consultation", category: "Consultations", description: "Professional skin consultation with the Tripple S clinical team.", price: "P400", duration: "30 min", active: true }
 ];
 
-export const trippleSProductSeed = [
-  { id: "dark-spot-serum", name: "Dark Spot Serum", description: "Professional skincare product for hyperpigmentation-focused home care.", size: "30ml", price: "P1,200", active: true },
-  { id: "vitamin-c-serum", name: "Vitamin C Serum", description: "Professional vitamin C skincare product.", size: "30ml", price: "P950", active: true },
-  { id: "complexion-corrector", name: "Complexion Corrector Cream", description: "Professional skincare cream for complexion and texture care.", size: "100ml", price: "P2,000", active: true },
-  { id: "anti-acne-serum", name: "Anti-Acne Serum", description: "Professional skincare product for acne-focused home care.", size: "", price: "P950", active: true },
-  { id: "retinol-serum", name: "Retinol Serum", description: "Professional retinol skincare product.", size: "", price: "P1,300", active: true }
-];
+export const trippleSProductSeed: never[] = [];
