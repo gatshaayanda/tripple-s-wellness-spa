@@ -1,44 +1,34 @@
-# Avram Kids
+# Tripple S Wellness Spa
 
-Avram Kids is a mobile-first booking website and operations foundation for children's event equipment hire.
+Tripple S Wellness Spa is a mobile-first digital front desk and client-care application for a medical aesthetics, skin health and wellness clinic in Gaborone, Botswana.
 
-## Public experience
+## Product journey
 
-The first release focuses on a simple customer journey:
+Customer:
+Discover → Understand → Enquire → Book → Confirm → Prepare → Attend → Follow Up → Return
 
-Customer → Offering → Booking Request → Availability → Confirmation → Event → Completion
-
-Initial offering categories:
-- Jumping Castles
-- Water Slides
-- Obstacle Courses
-- Interactive Games
-
-The public site is available at `/` and the booking request form at `/book`.
-
-## Booking behaviour
-
-Customers do not need an account to request a booking. The current form provides an honest client-side confirmation state and direct WhatsApp/phone fallback. It does not pretend to persist a booking or confirm availability until the real backend workflow is implemented.
+Business:
+Enquiry → Review → Appointment → Payment → Arrival → Completion → Follow-up → Repeat
 
 ## Stack
 
-Next.js App Router, React, TypeScript, Tailwind CSS, Firebase foundation, and Vercel.
+Next.js, React, TypeScript, Tailwind CSS, Firebase/Firestore and Vercel.
 
 ## Development
 
-Run:
-
-```bash
 npm install
 npm run dev
-```
 
 Quality gates:
 
-```bash
 npx tsc --noEmit
 npm run lint
 npm run build
-```
 
-Never commit secrets or `.env.local`.
+Never commit secrets or .env.local.
+
+## Important boundary
+
+This is not a diagnostic or medical-advice system. Clinical suitability remains with the Tripple S clinical team.
+
+Fresha is a functional benchmark only; this repository is Tripple S's own product and contains no migration workflow.
