@@ -8,7 +8,7 @@ service firebase.storage {
         && firestore.get(/databases/(default)/documents/admins/$(request.auth.uid)).data.role in ['owner', 'staff'];
     }
 
-    match /homeMedia/{fileName} {
+    match /tripple-s/{allPaths=**} {
       allow read: if true;
       allow write: if isAdmin()
         && request.resource.size < 12 * 1024 * 1024
