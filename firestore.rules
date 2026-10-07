@@ -2,16 +2,11 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
+    function isSignedIn() { return request.auth != null; }
     function isAdmin() {
       return isSignedIn()
         && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role
-          in ['owner', 'staff'];
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role in ['owner', 'staff'];
     }
 
     match /admins/{uid} {
@@ -19,42 +14,44 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
-    match /offerings/{offeringId} {
+    match /services/{serviceId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
     }
 
-    match /specials/{specialId} {
+    match /products/{productId} {
       allow read: if resource.data.active == true || isAdmin();
       allow create, update, delete: if isAdmin();
     }
 
-    match /homeMedia/{mediaId} {
-      allow read: if resource.data.active == true || isAdmin();
-      allow create, update, delete: if isAdmin();
-    }
-
-    // Customer booking requests are intentionally public to create.
-    // No customer account or anonymous Firebase Auth is required.
     match /bookingRequests/{requestId} {
       allow create: if true;
       allow read, update, delete: if isAdmin();
     }
 
-    match /customers/{customerId} {
+    match /clients/{clientId} {
       allow read, write: if isAdmin();
     }
 
-    match /jobs/{jobId} {
+    match /appointments/{appointmentId} {
       allow read, write: if isAdmin();
     }
 
-    match /availability/{availabilityId} {
+    match /payments/{paymentId} {
       allow read, write: if isAdmin();
     }
 
-    match /orders/{orderId} {
+    match /followups/{followupId} {
       allow read, write: if isAdmin();
+    }
+
+    match /reviews/{reviewId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
     }
 
     match /{document=**} {
