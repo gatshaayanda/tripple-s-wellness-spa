@@ -243,3 +243,15 @@ Every controlled change should end with:
 6. explicit user-side actions, if any
 
 GitHub is the save point.
+
+## User checkpoint / push rule
+When the user says **“push”**, treat that as a QA checkpoint request:
+- finish the agreed implementation slice first
+- commit it to the intended remote branch
+- push the latest commit to GitHub
+- report the exact remote branch and commit SHA so the user can QA that state
+- do **not** merge a branch/PR into `main` unless the user explicitly asks to merge
+- do **not** treat GitHub Actions success as product QA; it only verifies the automated checks that actually ran
+- do **not** tell the user the app is ready/fully updated for production merely because code was pushed
+- distinguish clearly between **pushed for QA**, **CI verified**, **Vercel deployed/verified**, and **Firebase configured/verified**
+- after a push, the user is the final product reviewer and QA owner; subsequent work should build from the exact pushed checkpoint.
