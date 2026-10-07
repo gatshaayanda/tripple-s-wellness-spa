@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getServices, type ServiceRecord } from "@/lib/firebase/data";
+import { getPublicServices, type ServiceRecord } from "@/lib/firebase/data";
 
 const categories = [
   ["IV Wellness Drips", "Hydration, glow and wellness support."],
@@ -18,7 +18,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    void getServices().then((items) => setServices(items.filter((item) => item.active))).catch(() => setServices([])).finally(() => setLoading(false));
+    void getPublicServices().then((items) => setServices(items.filter((item) => item.active))).catch(() => setServices([])).finally(() => setLoading(false));
   }, []);
 
   return <main className="site">
