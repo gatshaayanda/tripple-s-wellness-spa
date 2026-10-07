@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { createBookingRequest, getServices, type ServiceRecord } from "@/lib/firebase/data";
+import { createBookingRequest, getPublicServices, type ServiceRecord } from "@/lib/firebase/data";
 
 const whatsapp = "https://wa.me/26774866703?text=Hello%20Tripple%20S%2C%20I%27d%20like%20to%20enquire.";
 
@@ -21,7 +21,7 @@ export default function BookForm(){
   const [busy,setBusy]=useState(false);
   const minDate=localDateValue();
 
-  useEffect(()=>{void getServices().then(items=>setServices(items.filter(item=>item.active))).catch(()=>setServices([])).finally(()=>setLoadingServices(false));},[]);
+  useEffect(()=>{void getPublicServices().then(items=>setServices(items.filter(item=>item.active))).catch(()=>setServices([])).finally(()=>setLoadingServices(false));},[]);
   const selected=useMemo(()=>services.find(item=>item.id===requestedService),[services,requestedService]);
 
   async function handleSubmit(event:FormEvent<HTMLFormElement>){
