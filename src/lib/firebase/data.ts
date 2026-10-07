@@ -1,4 +1,4 @@
-import { addDoc, collection, deleteDoc, doc, getDocs, setDoc, updateDoc } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDocs, query, setDoc, updateDoc, where } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import type { ServiceCategory } from "@/lib/tripple-s/catalog";
 
@@ -28,8 +28,18 @@ export async function getServices(): Promise<ServiceRecord[]> {
   const snapshot = await getDocs(servicesCollection);
   return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ServiceRecord, "id">) }));
 }
+
+export async function getPublicServices(): Promise<ServiceRecord[]> {
+  const snapshot = await getDocs(query(servicesCollection, where("active", "==", true)));
+  return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ServiceRecord, "id">) }));
+}
 export async function saveServiceRecord(item: ServiceRecord) { await setDoc(doc(db, "services", item.id), item); }
 export async function deleteServiceRecord(id: string) { await deleteDoc(doc(db, "services", id)); }
+
+export async function getPublicProducts(): Promise<ProductRecord[]> {
+  const snapshot = await getDocs(query(productsCollection, where("active", "==", true)));
+  return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ProductRecord, "id">) }));
+}
 
 export async function getProducts(): Promise<ProductRecord[]> {
   const snapshot = await getDocs(productsCollection);
