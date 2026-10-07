@@ -2,19 +2,19 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "THE MEATING PLACE",
-    short_name: "Meating Place",
-    description: "THE MEATING PLACE — CAR WASH & BRAAI. Good food, good mood.",
+    name: "Tripple S Wellness Spa",
+    short_name: "Tripple S Spa",
+    description: "Medical aesthetics, skin health and wellness in Gaborone.",
     start_url: "/",
     display: "standalone",
-    background_color: "#17110d",
-    theme_color: "#17110d",
+    background_color: "#f8f6f1",
+    theme_color: "#171614",
     orientation: "portrait-primary",
     lang: "en",
-    categories: ["food", "lifestyle", "business"],
+    categories: ["health", "beauty", "lifestyle"],
     icons: [
       { src: "/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
-      { src: "/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "maskable" },
-    ],
+      { src: "/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "maskable" }
+    ]
   };
 }
