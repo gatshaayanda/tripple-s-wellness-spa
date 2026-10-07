@@ -3,15 +3,11 @@ import { Suspense } from "react";
 import BookForm from "./book-form";
 
 export const metadata: Metadata = {
-  title: "Make a Booking Request",
-  description: "Send THE MEATING PLACE a request for food, car wash, braai, catering or a private event.",
+  title: "Request an Appointment",
+  description: "Request an appointment with Tripple S Wellness Spa in Gaborone.",
   alternates: { canonical: "/book" },
 };
 
 export default function BookPage() {
-  return (
-    <Suspense fallback={<main className="bookPage"><div className="formWrap"><div className="formCard">Loading booking form…</div></div></main>}>
-      <BookForm />
-    </Suspense>
-  );
+  return <Suspense fallback={<main className="bookPage"><div className="formWrap"><div className="formCard">Opening appointment request…</div></div></main>}><BookForm /></Suspense>;
 }
