@@ -3,60 +3,9 @@
 import { useEffect, useState } from "react";
 
 export default function PwaRegister() {
-  const [offline, setOffline] = useState(false);
-  const [installable, setInstallable] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-
-  useEffect(() => {
-    setOffline(!navigator.onLine);
-    const online = () => setOffline(false);
-    const offlineNow = () => setOffline(true);
-    const installPrompt = (event: Event) => {
-      event.preventDefault();
-      setDeferredPrompt(event as BeforeInstallPromptEvent);
-      setInstallable(true);
-    };
-
-    window.addEventListener("online", online);
-    window.addEventListener("offline", offlineNow);
-    window.addEventListener("beforeinstallprompt", installPrompt);
-
-    if ("serviceWorker" in navigator) {
-      void navigator.serviceWorker.register("/sw.js").catch(() => undefined);
-    }
-
-    return () => {
-      window.removeEventListener("online", online);
-      window.removeEventListener("offline", offlineNow);
-      window.removeEventListener("beforeinstallprompt", installPrompt);
-    };
-  }, []);
-
-  async function install() {
-    if (!deferredPrompt) return;
-    await deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    setDeferredPrompt(null);
-    setInstallable(false);
-  }
-
-  return <>
-    {offline && (
-      <div className="offlineBanner" role="status">
-        Offline mode · previously loaded pages and data remain available. New booking requests can be saved on this device and synced when you reconnect.
-      </div>
-    )}
-    {installable && (
-      <button className="pwaInstall" type="button" onClick={() => void install()}>
-        Install Meating Place
-      </button>
-    )}
-  </>;
+  const [offline,setOffline]=useState(false); const [installable,setInstallable]=useState(false); const [deferredPrompt,setDeferredPrompt]=useState<BeforeInstallPromptEvent|null>(null);
+  useEffect(()=>{setOffline(!navigator.onLine);const online=()=>setOffline(false);const offlineNow=()=>setOffline(true);const installPrompt=(event:Event)=>{event.preventDefault();setDeferredPrompt(event as BeforeInstallPromptEvent);setInstallable(true)};window.addEventListener("online",online);window.addEventListener("offline",offlineNow);window.addEventListener("beforeinstallprompt",installPrompt);if("serviceWorker"in navigator)void navigator.serviceWorker.register("/sw.js").catch(()=>undefined);return()=>{window.removeEventListener("online",online);window.removeEventListener("offline",offlineNow);window.removeEventListener("beforeinstallprompt",installPrompt)}},[]);
+  async function install(){if(!deferredPrompt)return;await deferredPrompt.prompt();await deferredPrompt.userChoice;setDeferredPrompt(null);setInstallable(false)}
+  return <>{offline&&<div className="offlineBanner" role="status">Offline mode · previously loaded Tripple S pages remain available. A booking request is only received by the clinic after it synchronizes.</div>}{installable&&<button className="pwaInstall" type="button" onClick={()=>void install()}>Install Tripple S Spa</button>}</>;
 }
-
-declare global {
-  interface BeforeInstallPromptEvent extends Event {
-    prompt: () => Promise<void>;
-    userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
-  }
-}
+declare global { interface BeforeInstallPromptEvent extends Event { prompt:()=>Promise<void>; userChoice:Promise<{outcome:"accepted"|"dismissed";platform:string}>; } }
