@@ -1,92 +1,50 @@
 import { addDoc, collection, deleteDoc, doc, getDocs, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
+import type { ServiceCategory } from "@/lib/tripple-s/catalog";
 
-export type OfferingRecord = {
-  id: string;
-  name: string;
-  category: "Food" | "Car Wash" | "Braai" | "Other";
-  detail: string;
-  price?: string;
-  active: boolean;
-  imageUrl?: string;
+export type ServiceRecord = {
+  id: string; name: string; category: ServiceCategory; description: string; price: string; duration: string; active: boolean;
+  consultationRequired?: boolean; assessmentNote?: string; prep?: string; aftercare?: string;
 };
 
-export type SpecialRecord = {
-  id: string;
-  title: string;
-  detail: string;
-  active: boolean;
-  offer?: string;
-  startDate?: string;
-  endDate?: string;
+export type ProductRecord = {
+  id: string; name: string; description: string; size?: string; price: string; active: boolean; purchaseMethod?: string;
 };
+
+export type BookingStatus = "NEW" | "REVIEWING" | "APPROVED" | "PAYMENT_PENDING" | "CONFIRMED" | "ARRIVED" | "COMPLETED" | "NEEDS_CONTACT" | "DECLINED" | "RESCHEDULED" | "CANCELLED" | "NO_SHOW" | "FOLLOW_UP";
+export type PaymentStatus = "PAYMENT_PENDING" | "PAYMENT_INSTRUCTIONS" | "PAYMENT_PROOF_SUBMITTED" | "PAYMENT_VERIFIED" | "PAID" | "REFUNDED";
 
 export type BookingRequestRecord = {
-  id: string;
-  createdAt: string;
-  name: string;
-  phone: string;
-  email: string;
-  requestType: string;
-  date?: string;
-  startTime?: string;
-  details: string;
-  notes: string;
-  status: "New" | "Contacted" | "Confirmed" | "Completed" | "Cancelled";
+  id: string; createdAt: string; name: string; phone: string; email?: string; serviceId?: string; serviceNameSnapshot: string;
+  priceSnapshot?: string; durationSnapshot?: string; preferredDate?: string; preferredTime?: string; message?: string;
+  clientType: "NEW" | "RETURNING"; referralSource?: string; status: BookingStatus; paymentStatus: PaymentStatus;
 };
 
-const offeringsCollection = collection(db, "offerings");
-const specialCollection = collection(db, "specials");
+const servicesCollection = collection(db, "services");
+const productsCollection = collection(db, "products");
 const bookingCollection = collection(db, "bookingRequests");
 
-export async function getOfferings(): Promise<OfferingRecord[]> {
-  const snapshot = await getDocs(offeringsCollection);
-  return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<OfferingRecord, "id">) }));
+export async function getServices(): Promise<ServiceRecord[]> {
+  const snapshot = await getDocs(servicesCollection);
+  return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ServiceRecord, "id">) }));
 }
+export async function saveServiceRecord(item: ServiceRecord) { await setDoc(doc(db, "services", item.id), item); }
+export async function deleteServiceRecord(id: string) { await deleteDoc(doc(db, "services", id)); }
 
-export async function saveOfferingRecord(item: OfferingRecord) {
-  await setDoc(doc(db, "offerings", item.id), item);
+export async function getProducts(): Promise<ProductRecord[]> {
+  const snapshot = await getDocs(productsCollection);
+  return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ProductRecord, "id">) }));
 }
-
-export async function deleteOfferingRecord(id: string) {
-  await deleteDoc(doc(db, "offerings", id));
-}
-
-export async function getSpecials(): Promise<SpecialRecord[]> {
-  const snapshot = await getDocs(specialCollection);
-  return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<SpecialRecord, "id">) }));
-}
-
-export async function saveSpecialRecord(item: SpecialRecord) {
-  await setDoc(doc(db, "specials", item.id), item);
-}
-
-export async function deleteSpecialRecord(id: string) {
-  await deleteDoc(doc(db, "specials", id));
-}
+export async function saveProductRecord(item: ProductRecord) { await setDoc(doc(db, "products", item.id), item); }
+export async function deleteProductRecord(id: string) { await deleteDoc(doc(db, "products", id)); }
 
 export async function createBookingRequest(data: Omit<BookingRequestRecord, "id">) {
-  // Customer requests are intentionally public. No Firebase Auth session is
-  // required here; Firestore rules control the public create boundary.
-  try {
-    const result = await addDoc(bookingCollection, data);
-    return result.id;
-  } catch (error) {
-    console.error("[Meating Place] booking request failed", error);
-    throw error;
-  }
+  const result = await addDoc(bookingCollection, data);
+  return result.id;
 }
-
 export async function getBookingRequests(): Promise<BookingRequestRecord[]> {
   const snapshot = await getDocs(bookingCollection);
   return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<BookingRequestRecord, "id">) }));
 }
-
-export async function updateBookingStatus(id: string, status: BookingRequestRecord["status"]) {
-  await updateDoc(doc(db, "bookingRequests", id), { status });
-}
-
-export async function clearBookingRequests() {
-  const snapshot = await getDocs(bookingCollection);
-  for (const item of snapshot.docs) await deleteDoc(item.ref);
-}
+export async function updateBookingStatus(id: string, status: BookingStatus) { await updateDoc(doc(db, "bookingRequests", id), { status }); }
+export async function updatePaymentStatus(id: string, paymentStatus: PaymentStatus) { await updateDoc(doc(db, "bookingRequests", id), { paymentStatus }); }
