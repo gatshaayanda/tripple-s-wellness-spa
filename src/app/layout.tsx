@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import Script from "next/script";
 import PwaRegister from "@/app/pwa-register";
 import "./globals.css";
 import "./pwa.css";
@@ -47,6 +48,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
+      <head><Script src="/pwa-install.js" strategy="beforeInteractive" /></head>
       <body>
         <PwaRegister />
         {children}
