@@ -42,7 +42,6 @@ export default function PwaRegister() {
   const [offline, setOffline] = useState(false);
   const [inAppBrowser, setInAppBrowser] = useState<string | null>(null);
   const [handoffFallback, setHandoffFallback] = useState(false);
-  const [installPromptAvailable, setInstallPromptAvailable] = useState(false);
   const [installed, setInstalled] = useState(false);
   const [showInstallHelp, setShowInstallHelp] = useState(false);
   const [platform, setPlatform] = useState<"android" | "ios" | "desktop">("desktop");
@@ -64,11 +63,9 @@ export default function PwaRegister() {
     const online = () => setOffline(false);
     const offlineNow = () => setOffline(true);
     const installable = () => {
-      if (!isStandalone() && !window.__trippleSPwa?.installed) setInstallPromptAvailable(Boolean(window.__trippleSPwa?.deferredPrompt));
     };
     const appInstalled = () => {
       setInstalled(true);
-      setInstallPromptAvailable(false);
       setShowInstallHelp(false);
       setInAppBrowser(null);
       setHandoffFallback(false);
@@ -124,7 +121,6 @@ export default function PwaRegister() {
           setShowInstallHelp(false);
         }
         window.__trippleSPwa!.deferredPrompt = null;
-        setInstallPromptAvailable(false);
       } catch (error) {
         console.error("Tripple S native install prompt failed", error);
         setShowInstallHelp(true);
