@@ -43,6 +43,7 @@ export default function PwaRegister() {
   const [offline, setOffline] = useState(false);
   const [inAppBrowser, setInAppBrowser] = useState<string | null>(null);
   const [handoffFallback, setHandoffFallback] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [installed, setInstalled] = useState(false);
   const [showInstallHelp, setShowInstallHelp] = useState(false);
   const [platform, setPlatform] = useState<"android" | "ios" | "desktop">("desktop");
@@ -92,6 +93,7 @@ export default function PwaRegister() {
     const httpsUrl = destination.toString();
     const ua = navigator.userAgent || "";
     setHandoffFallback(false);
+    setLinkCopied(false);
     if (/Android/i.test(ua)) {
       const intentUrl = `intent://${destination.host}${destination.pathname}${destination.search}${destination.hash}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(httpsUrl)};end`;
       window.location.href = intentUrl;
@@ -130,8 +132,10 @@ export default function PwaRegister() {
   const copyCurrentUrl = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
+      setLinkCopied(true);
       setHandoffFallback(true);
     } catch {
+      setLinkCopied(false);
       setHandoffFallback(true);
     }
   }, []);
@@ -151,7 +155,7 @@ export default function PwaRegister() {
             <p>You're viewing Tripple S inside {inAppBrowser}. Open this same page in your normal browser to make booking and app installation work more reliably.</p>
             <button className="browserGatePrimary" type="button" onClick={openNormalBrowser}>{platform === "android" ? "Open in Chrome" : platform === "ios" ? "Open in Safari" : "Open in browser"} <span aria-hidden="true">↗</span></button>
             <button className="browserGateSecondary" type="button" onClick={() => void copyCurrentUrl()}>Copy this page link</button>
-            {handoffFallback && <div className="browserGateHelp" role="status"><strong>If your browser did not open:</strong><span>Use the menu in {inAppBrowser} and choose Open in browser, Chrome, or Safari. The copied link keeps this page.</span></div>}
+            {handoffFallback && <div className="browserGateHelp" role="status"><strong>If your browser did not open:</strong><span>Use the menu in {inAppBrowser} and choose Open in browser, Chrome, or Safari. {linkCopied ? "The page link was copied and keeps this destination." : "If copying was blocked, use the in-app browser menu to open this page externally."}</span></div>}
             <p className="browserGateFoot">Your current page is preserved. This step is only for leaving the in-app browser.</p>
           </div>
         </div>
