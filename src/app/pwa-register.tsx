@@ -52,14 +52,14 @@ export default function PwaRegister() {
     const ua = navigator.userAgent || "";
     setPlatform(/iPhone|iPad|iPod/i.test(ua) ? "ios" : /Android/i.test(ua) ? "android" : "desktop");
     const marker = new URL(window.location.href).searchParams.get("__external_browser");
-    if (marker === "1") {
+    if (marker === "1" && !getInAppBrowser()) {
       const clean = new URL(window.location.href);
       clean.searchParams.delete("__external_browser");
       window.history.replaceState(window.history.state, "", clean.pathname + clean.search + clean.hash);
     }
     const standalone = isStandalone() || window.__trippleSPwa?.installed === true;
     setInstalled(standalone);
-    if (!standalone && marker !== "1" && !isPrivateRoute()) setInAppBrowser(getInAppBrowser());
+    const embeddedBrowser = getInAppBrowser();\n    if (!standalone && !(marker === "1" && !embeddedBrowser) && !isPrivateRoute()) setInAppBrowser(embeddedBrowser);
 
     const online = () => setOffline(false);
     const offlineNow = () => setOffline(true);
