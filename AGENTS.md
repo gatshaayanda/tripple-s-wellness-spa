@@ -255,3 +255,18 @@ When the user says **“push”**, treat that as a QA checkpoint request:
 - do **not** tell the user the app is ready/fully updated for production merely because code was pushed
 - distinguish clearly between **pushed for QA**, **CI verified**, **Vercel deployed/verified**, and **Firebase configured/verified**
 - after a push, the user is the final product reviewer and QA owner; subsequent work should build from the exact pushed checkpoint.
+
+
+## Golden system — WhatsApp → normal browser → PWA install
+The PWA journey is a single root-level controller, separate from customer page components:
+- Early install-event capture: `public/pwa-install.js`, loaded with Next Script `beforeInteractive` from `src/app/layout.tsx`. It retains `beforeinstallprompt` on `window.__trippleSPwa` and emits `tripple:pwa-installable`; it owns the one `appinstalled` listener and emits `tripple:pwa-installed`.
+- Root state/UI controller: `src/app/pwa-register.tsx`. Do not add route-level install prompts, duplicate event listeners, alert dialogs, or a second PWA controller.
+- Styling: `src/app/pwa.css`.
+- Manifest metadata: `src/app/manifest.ts` and `public/manifest.webmanifest`; keep these outputs aligned.
+- Service worker/cache: `public/sw.js`; bump the Tripple S cache namespace when changing shell assets and keep the early install-capture script in the shell cache.
+- WhatsApp and supported in-app browsers are the **escape stage**. The branded gate offers one platform-aware primary action, preserves the current pathname/query/hash, and provides copy/menu fallback guidance if the host app cannot launch an external browser. The `__external_browser=1` marker is stripped after arrival in a non-embedded browser; it must not suppress the gate if the destination still identifies as an embedded browser.
+- Normal browser is the **install stage**. Keep the branded Install action available unless installed/standalone or on `/admin` or `/account`. If the native event exists, the install button calls its retained `prompt()` directly from the click gesture. If unavailable or the prompt errors, show platform-specific instructions (Android Chrome menu, iOS Safari Share → Add to Home Screen, desktop Chrome/Edge install menu). Never claim the native prompt opened unless it did.
+- Do not auto-open the install help panel. Do not show the install promotion over the embedded-browser gate. Handle `appinstalled` by suppressing installation UI.
+- Browser/OS eligibility cannot be forced from JavaScript. Investigate HTTPS, manifest name/start URL/scope/display/icons, service-worker registration/scope, event timing, and browser diagnostics when native install is unavailable. Current project icon asset is `public/icon.svg`; do not declare missing raster icons as though they exist.
+- The browser handoff must preserve the current destination route; avoid redirects to `/` and loops. Android uses a Chrome intent with an HTTPS fallback URL; iOS uses the Safari URL scheme where supported. Browser host behavior varies, so always keep a visible fallback.
+- Verification checklist for each change: inspect root controller and all event listeners; inspect actual manifest response, icon paths, and service-worker scope/cache; test embedded-browser gate and external handoff separately from normal-browser install; test native event and missing-event fallback; test standalone/appinstalled suppression; verify direct route entry and route preservation; run `npx tsc --noEmit`, `npm run lint`, `npm run build`; inspect exact pushed commit and Vercel deployment before claiming QA-ready. GitHub CI is not a substitute for real-device handoff/install testing.
