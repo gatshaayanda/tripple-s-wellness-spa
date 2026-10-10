@@ -58,7 +58,8 @@ export default function PwaRegister() {
     }
     const standalone = isStandalone() || window.__trippleSPwa?.installed === true;
     setInstalled(standalone);
-    const embeddedBrowser = getInAppBrowser();\n    if (!standalone && !(marker === "1" && !embeddedBrowser) && !isPrivateRoute()) setInAppBrowser(embeddedBrowser);
+    const embeddedBrowser = getInAppBrowser();
+    if (!standalone && !(marker === "1" && !embeddedBrowser) && !isPrivateRoute()) setInAppBrowser(embeddedBrowser);
 
     const online = () => setOffline(false);
     const offlineNow = () => setOffline(true);
