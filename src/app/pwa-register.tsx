@@ -35,7 +35,7 @@ function getInAppBrowser() {
 }
 
 function isPrivateRoute() {
-  return /^\/(admin|account)(\/|$)/i.test(window.location.pathname);
+  return typeof window !== "undefined" && /^\/(admin|account)(\/|$)/i.test(window.location.pathname);
 }
 
 export default function PwaRegister() {
@@ -62,8 +62,6 @@ export default function PwaRegister() {
 
     const online = () => setOffline(false);
     const offlineNow = () => setOffline(true);
-    const installable = () => {
-    };
     const appInstalled = () => {
       setInstalled(true);
       setShowInstallHelp(false);
@@ -72,9 +70,7 @@ export default function PwaRegister() {
     };
     window.addEventListener("online", online);
     window.addEventListener("offline", offlineNow);
-    window.addEventListener("tripple:pwa-installable", installable);
     window.addEventListener("tripple:pwa-installed", appInstalled);
-    installable();
 
     if ("serviceWorker" in navigator) {
       void navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch((error) => {
@@ -84,7 +80,6 @@ export default function PwaRegister() {
     return () => {
       window.removeEventListener("online", online);
       window.removeEventListener("offline", offlineNow);
-      window.removeEventListener("tripple:pwa-installable", installable);
       window.removeEventListener("tripple:pwa-installed", appInstalled);
     };
   }, []);
