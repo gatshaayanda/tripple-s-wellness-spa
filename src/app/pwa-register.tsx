@@ -18,6 +18,7 @@ declare global {
 }
 
 function isStandalone() {
+  if (typeof window === "undefined" || typeof navigator === "undefined") return false;
   return window.matchMedia("(display-mode: standalone)").matches ||
     ("standalone" in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
 }
