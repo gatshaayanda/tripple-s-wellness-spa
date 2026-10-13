@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
     const settingsSnap = await db.collection("settings").doc("clinic").get();
     const saved = settingsSnap.data() ?? {};
     const settings = { openingHours: { ...defaultClinicSettings.openingHours, ...(saved.openingHours ?? {}) }, bookingRules: { ...defaultClinicSettings.bookingRules, ...(saved.bookingRules ?? {}) } };
+    settings.openingHours.sunday = { ...defaultClinicSettings.openingHours.sunday, ...(saved.openingHours?.sunday ?? {}), open: true, byAppointment: true };
     const day = days[new Date(date + "T12:00:00+02:00").getUTCDay()];
     
     const hours = settings.openingHours[day];
