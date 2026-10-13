@@ -32,12 +32,13 @@ export async function getServices(): Promise<ServiceRecord[]> {
 
 export async function getPublicServices(): Promise<ServiceRecord[]> {
   try {
-    const snapshot = await getDocs(query(servicesCollection, where("active", "==", true)));
-    const records = snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ServiceRecord, "id">) }));
-    return records.length ? records : trippleSServiceSeed;
+    // Services are publicly readable, so distinguish an unseeded collection from an intentionally hidden catalogue.
+    const snapshot = await getDocs(servicesCollection);
+    if (snapshot.empty) return trippleSServiceSeed;
+    return snapshot.docs
+      .map((item) => ({ id: item.id, ...(item.data() as Omit<ServiceRecord, "id">) }))
+      .filter((item) => item.active);
   } catch (error) {
-    // Keep public discovery and treatment-linked booking usable if the catalogue read is unavailable.
-    // The fallback is the owner-reviewed seed catalogue; booking requests still require Firebase to accept the write.
     console.warn("[Tripple S] public services unavailable; using the seed catalogue", error);
     return trippleSServiceSeed;
   }
@@ -47,9 +48,13 @@ export async function deleteServiceRecord(id: string) { await deleteDoc(doc(db, 
 
 export async function getPublicProducts(): Promise<ProductRecord[]> {
   try {
-    const snapshot = await getDocs(query(productsCollection, where("active", "==", true)));
+    const [snapshot, catalogueState] = await Promise.all([
+      getDocs(query(productsCollection, where("active", "==", true))),
+      getDoc(doc(db, "settings", "catalogueState")),
+    ]);
     const records = snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ProductRecord, "id">) }));
-    return records.length ? records : trippleSProductSeed;
+    // Once an owner has managed the catalogue, an empty active query means all products are intentionally hidden.
+    return catalogueState.data()?.productsManaged === true ? records : (records.length ? records : trippleSProductSeed);
   } catch (error) {
     console.warn("[Tripple S] public products unavailable; using the seed catalogue", error);
     return trippleSProductSeed;
@@ -60,8 +65,8 @@ export async function getProducts(): Promise<ProductRecord[]> {
   const snapshot = await getDocs(productsCollection);
   return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ProductRecord, "id">) }));
 }
-export async function saveProductRecord(item: ProductRecord) { await setDoc(doc(db, "products", item.id), item); }
-export async function deleteProductRecord(id: string) { await deleteDoc(doc(db, "products", id)); }
+export async function saveProductRecord(item: ProductRecord) { await setDoc(doc(db, "products", item.id), item); await setDoc(doc(db, "settings", "catalogueState"), { productsManaged: true }, { merge: true }); }
+export async function deleteProductRecord(id: string) { await deleteDoc(doc(db, "products", id)); await setDoc(doc(db, "settings", "catalogueState"), { productsManaged: true }, { merge: true }); }
 
 export async function createBookingRequest(data: Omit<BookingRequestRecord, "id">) {
   const result = await addDoc(bookingCollection, data);
