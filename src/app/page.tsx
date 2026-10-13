@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getClinicSettings, getPublicLoyaltyPrograms, getPublicProducts, getPublicServices, type LoyaltyProgramRecord, type ProductRecord, type ServiceRecord } from "@/lib/firebase/data";
-import { defaultClinicSettings, dayLabels, isAnnouncementVisible, type ClinicSettings, type DayKey } from "@/lib/tripple-s/clinic-settings";
+import { defaultClinicSettings, isAnnouncementVisible, type ClinicSettings, type DayKey } from "@/lib/tripple-s/clinic-settings";
 
 const whatsapp = "https://wa.me/26774866703?text=Hello%20Tripple%20S%2C%20I%27d%20like%20to%20enquire.";
 
