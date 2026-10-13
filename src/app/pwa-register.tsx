@@ -152,7 +152,7 @@ export default function PwaRegister() {
           <div className="browserGateCard">
             <span className="browserGateKicker">TRIPPLE S WELLNESS SPA</span>
             <h1 id="browserGateTitle">A better experience in your browser.</h1>
-            <p>You're viewing Tripple S inside {inAppBrowser}. Open this same page in your normal browser to make booking and app installation work more reliably.</p>
+            <p>You are viewing Tripple S inside {inAppBrowser}. Open this same page in your normal browser to make booking and app installation work more reliably.</p>
             <button className="browserGatePrimary" type="button" onClick={openNormalBrowser}>{platform === "android" ? "Open in Chrome" : platform === "ios" ? "Open in Safari" : "Open in browser"} <span aria-hidden="true">↗</span></button>
             <button className="browserGateSecondary" type="button" onClick={() => void copyCurrentUrl()}>Copy this page link</button>
             {handoffFallback && <div className="browserGateHelp" role="status"><strong>If your browser did not open:</strong><span>Use the menu in {inAppBrowser} and choose Open in browser, Chrome, or Safari. {linkCopied ? "The page link was copied and keeps this destination." : "If copying was blocked, use the in-app browser menu to open this page externally."}</span></div>}
