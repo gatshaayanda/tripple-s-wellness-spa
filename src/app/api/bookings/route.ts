@@ -8,7 +8,7 @@ const mins = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice
 const clock = (value: number) => String(Math.floor(value / 60)).padStart(2, "0") + ":" + String(value % 60).padStart(2, "0");
 const slotId = (date: string, time: string) => date.replace(/-/g, "") + "_" + time.replace(":", "");
 const durationOf = (value: string | undefined) => Math.max(15, Math.min(240, Number(value?.match(/\d+/)?.[0] ?? 30)));
-const priceOf = (value: string | undefined) => { if (!value || /[-–—]/.test(value)) return null; const match = value.match(/P\s*(\d+(?:\.\d{1,2})?)(?!\d)/i); return match ? Number(match[1]) : null; };
+const priceOf = (value: string | undefined) => { if (!value || /[-–—]/.test(value)) return null; const match = value.match(/P\s*([\d,]+(?:\.\d{1,2})?)/i); return match ? Number(match[1].replace(/,/g, "")) : null; };
 export async function POST(request: NextRequest) {
   let body: Record<string, unknown>;
   try { body = await request.json() as Record<string, unknown>; } catch { return NextResponse.json({ error: "Please check the booking details and try again." }, { status: 400 }); }
