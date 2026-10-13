@@ -41,6 +41,7 @@ export default function EnquiryModal({
     if (busy) return;
     const form = new FormData(event.currentTarget);
     setBusy(true); setError("");
+    let allowLocalFallback = false;
     try {
       const response = await fetch("/api/enquiries", {
         method: "POST",
@@ -55,12 +56,14 @@ export default function EnquiryModal({
         }),
       });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Your enquiry could not be sent. Please try again.");
+      if (!response.ok) { allowLocalFallback = response.status >= 500; throw new Error(result.error || "Your enquiry could not be sent. Please try again."); }
       setReference(String(result.reference || result.id || "").slice(0, 8).toUpperCase());
       setLocalOnly(false);
       setSubmitted(true);
     } catch (err) {
-      try {
+      if (!(allowLocalFallback || err instanceof TypeError)) {
+        setError(err instanceof Error ? err.message : "Your enquiry could not be sent. Please try again.");
+      } else try {
         const id = makeLocalDemoId();
         const requestType = kind === "PRODUCT" ? "PRODUCT_ENQUIRY" : kind === "TREATMENT" ? "TREATMENT_ENQUIRY" : "GENERAL_ENQUIRY";
         saveLocalDemoRecord({ id, createdAt: new Date().toISOString(), requestType, name: String(form.get("name") ?? "").trim(), phone: String(form.get("phone") ?? "").trim(), email: String(form.get("email") ?? "").trim(), serviceNameSnapshot: itemName || (kind === "GENERAL" ? "General client enquiry" : "Client enquiry"), productId: kind === "PRODUCT" ? itemId : undefined, productNameSnapshot: kind === "PRODUCT" ? itemName : undefined, serviceId: kind === "TREATMENT" ? itemId : undefined, clientType: "NEW", status: "NEW", paymentStatus: "PAYMENT_PENDING", message: String(form.get("message") ?? "").trim(), localOnly: true });
@@ -79,7 +82,7 @@ export default function EnquiryModal({
         <button className="enquiryClose" type="button" aria-label="Close enquiry" onClick={onClose} disabled={busy}>×</button>
         <span className="enquirySpark" aria-hidden="true">✦</span>
         <span className="kicker">TRIPPLE S · CLIENT CARE</span>
-        <h2 id="enquiry-title">{submitted ? "Your enquiry is with the team." : heading}</h2>
+        <h2 id="enquiry-title">{submitted ? localOnly ? "Your enquiry has not reached the team." : "Your enquiry is with the team." : heading}</h2>
         <p id="enquiry-description">{submitted ? localOnly ? "This enquiry is saved on this device only. It has not been sent to Tripple S. Please retry when online or contact the clinic directly." : "Thank you. Keep this reference for your records. This is an enquiry receipt, not an appointment confirmation." : intro}</p>
         {itemName && <div className="enquiryItem"><strong>{itemName}</strong>{itemPrice && <span>{itemPrice}</span>}</div>}
         {submitted ? (
