@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { getPublicServices, type ServiceRecord } from "@/lib/firebase/data";
 
 const categories = ["All", "IV Wellness Drips", "Medical Aesthetics", "Skin Treatments", "Body Contouring", "Wellness", "Consultations", "Packages"];
@@ -10,7 +10,6 @@ export default function TreatmentsPage() {
   const [services, setServices] = useState<ServiceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState("All");
-  const [search, setSearch] = useState("");
 
   useEffect(() => {
     void getPublicServices()
@@ -19,14 +18,7 @@ export default function TreatmentsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    return services.filter((item) => {
-      const categoryMatch = category === "All" || item.category === category;
-      const searchMatch = !term || [item.name, item.category, item.description].join(" ").toLowerCase().includes(term);
-      return categoryMatch && searchMatch;
-    });
-  }, [services, category, search]);
+  const filtered = services.filter((item) => category === "All" || item.category === category);
 
   const grouped = filtered.reduce<Record<string, ServiceRecord[]>>((acc, item) => {
     (acc[item.category] ??= []).push(item);
@@ -52,13 +44,6 @@ export default function TreatmentsPage() {
 
           {!loading && services.length > 0 && (
             <div className="catalogTools" aria-label="Treatment filters">
-              <input
-                className="catalogSearch"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search treatments…"
-                aria-label="Search treatments"
-              />
               <div className="filterChips" role="group" aria-label="Treatment categories">
                 {categories.map((item) => (
                   <button key={item} type="button" className={category === item ? "filterChip active" : "filterChip"} onClick={() => setCategory(item)}>
@@ -79,9 +64,9 @@ export default function TreatmentsPage() {
             </div>
           ) : filtered.length === 0 ? (
             <div className="emptyPublic">
-              <h3>No published treatment matches that search.</h3>
-              <p>Try another term or browse all categories.</p>
-              <button type="button" className="button buttonLight" onClick={() => { setSearch(""); setCategory("All"); }}>Clear filters</button>
+              <h3>No treatments in this category yet.</h3>
+              <p>Choose another category or browse the full menu.</p>
+              <button type="button" className="button buttonLight" onClick={() => setCategory("All")}>Browse all treatments</button>
             </div>
           ) : (
             Object.entries(grouped).map(([group, items]) => (

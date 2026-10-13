@@ -37,7 +37,7 @@ export const defaultClinicSettings: ClinicSettings = {
     thursday: { open: true, byAppointment: false, start: "08:00", end: "17:00" },
     friday: { open: true, byAppointment: false, start: "08:00", end: "17:00" },
     saturday: { open: true, byAppointment: false, start: "08:00", end: "17:00" },
-    sunday: { open: true, byAppointment: true, start: "08:00", end: "17:00" },
+    sunday: { open: false, byAppointment: false, start: "08:00", end: "17:00" },
   },
   bookingRules: { slotIntervalMinutes: 15, minimumNoticeHours: 24, advanceBookingDays: 90, bufferMinutes: 0 },
   announcement: { active: false, title: "", message: "", startDate: "", endDate: "" },
