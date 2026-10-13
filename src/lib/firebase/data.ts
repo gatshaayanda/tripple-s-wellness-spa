@@ -80,7 +80,7 @@ export async function updateBookingStatus(id: string, status: BookingStatus) {
   await updateDoc(doc(db, "bookingRequests", id), { status });
   if (status === "DECLINED" || status === "CANCELLED") {
     const token = await auth.currentUser?.getIdToken();
-    if (token) await fetch("/api/admin/calendar", { method: "DELETE", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: JSON.stringify({ bookingRequestId: id }) });
+    if (token) { const response = await fetch("/api/admin/calendar", { method: "DELETE", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: JSON.stringify({ bookingRequestId: id }) }); if (!response.ok) throw new Error("Status changed, but the slot could not be released. Please retry the release from the calendar."); }
   }
 }
 export async function updatePaymentStatus(id: string, paymentStatus: PaymentStatus) { await updateDoc(doc(db, "bookingRequests", id), { paymentStatus }); }

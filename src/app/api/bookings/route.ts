@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
-import { trippleSServiceSeed } from "@/lib/tripple-s/catalog";
+import { trippleSServiceSeed, type ServiceSeed } from "@/lib/tripple-s/catalog";
 import { defaultClinicSettings, type DayKey } from "@/lib/tripple-s/clinic-settings";
 export const dynamic = "force-dynamic";
 const days: DayKey[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     if (distance < 0 || distance > settings.bookingRules.advanceBookingDays) return NextResponse.json({ error: "Choose a date within the booking window." }, { status: 409 });
     if (new Date(date + "T" + time + ":00+02:00").getTime() < Date.now() + Number(settings.bookingRules.minimumNoticeHours || 0) * 3600000) return NextResponse.json({ error: "That time is too soon to book. Choose a later slot." }, { status: 409 });
     const serviceSnap = serviceId ? await db.collection("services").doc(serviceId).get() : null;
-    const service = serviceSnap?.exists ? { id: serviceId, ...serviceSnap.data() } : trippleSServiceSeed.find((item) => item.id === serviceId);
+    const service: ServiceSeed | null = serviceSnap?.exists ? ({ id: serviceId, ...serviceSnap.data() } as ServiceSeed) : (trippleSServiceSeed.find((item) => item.id === serviceId) ?? null);
     if (serviceId && (!service || service.active === false)) return NextResponse.json({ error: "That treatment is no longer available. Please choose another." }, { status: 409 });
     const duration = durationOf(String(service?.duration ?? "30 min"));
     const basePrice = priceOf(String(service?.price ?? ""));
@@ -47,7 +47,8 @@ export async function POST(request: NextRequest) {
     let discount: Record<string, unknown> | null = null;
     if (code) {
       const programs = await db.collection("loyaltyPrograms").where("active", "==", true).get();
-      discount = programs.docs.map((item) => ({ id:item.id, ...item.data() })).find((item) => String(item.code||"").toUpperCase()===code && (!item.startDate||String(item.startDate)<=date) && (!item.endDate||String(item.endDate)>=date) && (item.eligibility==="ALL"||(item.eligibility==="RETURNING"&&clientType==="RETURNING"))) ?? null;
+      const candidates: Record<string, unknown>[] = programs.docs.map((item) => ({ id: item.id, ...item.data() } as Record<string, unknown>));
+      discount = candidates.find((item) => String(item.code ?? "").toUpperCase() === code && (!item.startDate || String(item.startDate) <= date) && (!item.endDate || String(item.endDate) >= date) && (item.eligibility === "ALL" || (item.eligibility === "RETURNING" && clientType === "RETURNING"))) ?? null;
       if (!discount) return NextResponse.json({ error: "That offer code is invalid, expired or not eligible for this booking." }, { status: 400 });
     }
     const discountType = String(discount?.discountType ?? "");
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
     await db.runTransaction(async (tx) => {
       const snapshots = await Promise.all(reservationRefs.map((ref) => tx.get(ref)));
       if (snapshots.some((snapshot) => snapshot.exists)) throw new Error("SLOT_TAKEN");
-      const payload = { createdAt:new Date().toISOString(), name, phone, ...(email?{email}:{}), ...(serviceId?{serviceId}:{}), serviceNameSnapshot:String(service?.name??"Consultation / help choosing"), ...(service?{priceSnapshot:String(service.price??""),durationSnapshot:String(service.duration??duration+" min")}:{durationSnapshot:duration+" min"}), preferredDate:date, preferredTime:time, clientType, status:"NEW", paymentStatus:"PAYMENT_PENDING", ...(message?{message}:{}), ...(discount?{discountCodeSnapshot:String(discount.code),discountAmountSnapshot:discountAmount,finalPriceSnapshot:finalPrice}:{}) };
+      const payload = { createdAt:new Date().toISOString(), name, phone, ...(email?{email}:{}), ...(serviceId?{serviceId}:{}), serviceNameSnapshot:String(service?.name??"Consultation / help choosing"), ...(service?{priceSnapshot:String(service.price??""),durationSnapshot:String(service.duration??duration+" min")}:{durationSnapshot:duration+" min"}), preferredDate:date, preferredTime:time, clientType, status:"NEW", paymentStatus:"PAYMENT_PENDING", ...(message?{message}:{}), ...(discount?{discountCodeSnapshot:String(discount.code),discountAmountSnapshot:discountAmount,...(finalPrice?{finalPriceSnapshot:finalPrice}:{})}:{}) };
       tx.create(idRef,payload);
       for (let i=0;i<reservationRefs.length;i++) tx.create(reservationRefs[i],{date,time:occupied[i],bookingRequestId:idRef.id,kind:"booking-request",createdAt:new Date().toISOString()});
     });

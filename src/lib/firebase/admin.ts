@@ -7,7 +7,7 @@ function getAdminApp() {
   if (!raw) throw new Error("FIREBASE_ADMIN_KEY is not configured.");
   const account = JSON.parse(raw) as { project_id: string; client_email: string; private_key: string };
   return getApps().find((item) => item.name === "tripple-s-server") ?? initializeApp({
-    credential: cert({ ...account, private_key: account.private_key.replace(/\\n/g, "\n") }),
+    credential: cert({ projectId: account.project_id, clientEmail: account.client_email, privateKey: account.private_key.replace(/\\n/g, "\n") }),
     projectId: account.project_id,
   }, "tripple-s-server");
 }

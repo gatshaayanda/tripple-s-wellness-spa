@@ -41,6 +41,9 @@ export default function BookForm() {
 
   useEffect(() => setServiceId(requestedService), [requestedService]);
 
+  const selected = useMemo(() => services.find((item) => item.id === serviceId), [services, serviceId]);
+  const selectedDuration = selected?.duration.match(/\d+/)?.[0] ?? "30";
+
   useEffect(() => {
     setSelectedTime(""); setAvailableSlots([]); setAvailabilityError("");
     if (!preferredDate) return;
@@ -52,11 +55,9 @@ export default function BookForm() {
       .finally(()=>{if(!cancelled)setLoadingSlots(false);});
     return ()=>{cancelled=true;};
   }, [preferredDate, selectedDuration]);
-  const selected = useMemo(() => services.find((item) => item.id === serviceId), [services, serviceId]);
   const dayKeys: DayKey[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
   const selectedDay = preferredDate ? dayKeys[new Date(`${preferredDate}T12:00:00`).getDay()] : null;
   const selectedHours = selectedDay ? clinicSettings.openingHours[selectedDay] : undefined;
-  const selectedDuration = selected?.duration.match(/\d+/)?.[0] ?? "30";
   const showAnnouncement = isAnnouncementVisible(clinicSettings);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {

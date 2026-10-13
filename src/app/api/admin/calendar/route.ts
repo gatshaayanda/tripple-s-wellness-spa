@@ -12,9 +12,11 @@ export async function POST(request:NextRequest){
  try{
   const db=getAdminDb(),ref=db.collection("appointments").doc(item.id);
   const oldSnap=await ref.get(),old=oldSnap.exists?oldSnap.data():null;
-  const oldTimes:string[]=old?Array.from({length:Math.ceil((minutes(old.endTime)-minutes(old.startTime))/15)},(_,i)=>clock(minutes(old.startTime)+i*15)):[];
+  const oldDate=old?.date,oldStart=old?.startTime,oldEnd=old?.endTime;
+  const oldTimes:string[]=oldDate&&oldStart&&oldEnd?Array.from({length:Math.ceil((minutes(oldEnd)-minutes(oldStart))/15)},(_,i)=>clock(minutes(oldStart)+i*15)):[];
   const newTimes:string[]=Array.from({length:Math.ceil((minutes(item.endTime)-minutes(item.startTime))/15)},(_,i)=>clock(minutes(item.startTime)+i*15));
-  const oldRefs=oldTimes.map(time=>db.collection("slotReservations").doc(slotId(old.date,time)));
+  if(minutes(item.startTime)%15!==0||minutes(item.endTime)%15!==0)return NextResponse.json({error:"Use 15-minute increments for calendar entries."},{status:400});
+  const oldRefs=oldDate?oldTimes.map(time=>db.collection("slotReservations").doc(slotId(oldDate,time))):[];
   const newRefs=newTimes.map(time=>db.collection("slotReservations").doc(slotId(item.date,time)));
   await db.runTransaction(async tx=>{
    const unique=Array.from(new Map([...oldRefs,...newRefs].map(r=>[r.path,r])).values());
