@@ -16,7 +16,7 @@ export type BookingStatus = "NEW" | "REVIEWING" | "APPROVED" | "PAYMENT_PENDING"
 export type PaymentStatus = "PAYMENT_PENDING" | "PAYMENT_INSTRUCTIONS" | "PAYMENT_PROOF_SUBMITTED" | "PAYMENT_VERIFIED" | "PAID" | "REFUNDED";
 
 export type BookingRequestRecord = {
-  id: string; createdAt: string; name: string; phone: string; email?: string; serviceId?: string; serviceNameSnapshot: string;
+  id: string; createdAt: string; name: string; phone: string; email?: string; serviceId?: string; serviceNameSnapshot: string; requestType?: "APPOINTMENT" | "PRODUCT_ENQUIRY" | "TREATMENT_ENQUIRY" | "GENERAL_ENQUIRY"; productId?: string; productNameSnapshot?: string;
   priceSnapshot?: string; durationSnapshot?: string; preferredDate?: string; preferredTime?: string; message?: string; discountCodeSnapshot?: string; discountAmountSnapshot?: number; finalPriceSnapshot?: string;
   clientType: "NEW" | "RETURNING"; referralSource?: string; status: BookingStatus; paymentStatus: PaymentStatus;
 };
@@ -91,7 +91,7 @@ export async function getClinicSettings(): Promise<ClinicSettings> {
     if (!snapshot.exists()) return defaultClinicSettings;
     const saved = snapshot.data() as Partial<ClinicSettings>;
     return {
-      openingHours: { ...defaultClinicSettings.openingHours, ...(saved.openingHours ?? {}) },
+      openingHours: { ...defaultClinicSettings.openingHours, ...(saved.openingHours ?? {}), sunday: { ...defaultClinicSettings.openingHours.sunday, open: false, byAppointment: false } },
       bookingRules: { ...defaultClinicSettings.bookingRules, ...(saved.bookingRules ?? {}) },
       announcement: { ...defaultClinicSettings.announcement, ...(saved.announcement ?? {}) },
     };

@@ -416,3 +416,12 @@ Use The Plug's evidence vocabulary: **PASS / FAIL / NOT RUN / BLOCKED**. A code 
 - Current source inspection identified and corrected an availability fallback duration parser that could misread legacy held requests, and added server-side real-calendar-date validation in both availability lookup and booking submission. Automated CI and preview readiness must be recorded separately from browser, real Firebase and device QA.
 
 - **Clinic settings authorization:** Firestore rules allow public reads of the `settings/clinic` document but explicitly deny direct client writes. Admin changes must use `POST /api/admin/clinic-settings`, which verifies an authorized owner/staff bearer token and validates weekly hours, booking rules and announcement fields before writing through the server Admin SDK. Do not revert this to a browser `setDoc` call.
+
+
+## Customer engagement and booking reliability checkpoint — 2026-10-13
+- Treatment discovery is search-first on the landing page; the full Treatments page uses category browsing and must not repeat a second search field.
+- Public product, treatment and general enquiries stay inside the app and are recorded as typed client requests in the authenticated admin queue. An enquiry receipt is not a booking or stock confirmation; the clinic must review and respond during operating hours.
+- Sunday is closed by clinic policy. Enforce this in defaults, public settings reads, settings writes, availability generation and final booking submission.
+- The availability endpoint depends on server-side Firebase Admin access to settings, appointments, booking requests and slot reservations. Never fabricate slots when that source fails. Verify the deployed `FIREBASE_ADMIN_KEY` and runtime logs if availability still returns 503; do not weaken Firestore read rules to work around the failure.
+- Treatment duration remains owner-editable in Services; slot generation uses the published duration, clinic hours, notice/window, buffer and reserved/overlapping appointments. Booking submission rechecks the slot transactionally. Cancelled, declined or rescheduled requests release their reservations.
+- Experience direction: calm editorial visual language, clear next steps, accessible enquiry modal, reduced-motion support, and minimal data collection. Do not add diagnostic claims or request sensitive medical details in enquiry forms.

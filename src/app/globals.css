@@ -140,3 +140,34 @@
 @media(max-width:800px){.offerGrid{grid-template-columns:1fr 1fr}.careNoteInner{align-items:flex-start;flex-direction:column;gap:7px}}
 @media(max-width:560px){.heroSearch{margin-top:20px}.heroSearchInput input{font-size:.84rem;padding:10px 6px}.heroSearchInput button{padding:11px 12px}.heroSecondaryActions{gap:12px}.offerGrid{grid-template-columns:1fr}.slotGrid{grid-template-columns:repeat(3,minmax(0,1fr))}.calendarItem{align-items:flex-start;flex-direction:column}.loyaltyItem{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.heroSearchResults,.offerCard{animation:none!important}.slotButton{transition:none}.slotButton:hover{transform:none}}
+
+
+/* In-app enquiry: keep customer intent inside Tripple S and give the team a reviewable request. */
+.productEnquireButton,.footerEnquiryLink{border:0;background:transparent;padding:0;color:var(--gold);font-weight:800;cursor:pointer;text-align:left}
+.productEnquireButton:hover,.footerEnquiryLink:hover{text-decoration:underline;text-underline-offset:4px}
+.footerEnquiryLink{color:#bcb8b0;line-height:1.7}
+.enquiryBackdrop{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:18px;background:rgba(25,23,20,.55);backdrop-filter:blur(7px);animation:enquiryFade .18s ease-out}
+.enquiryDialog{position:relative;width:min(560px,100%);max-height:min(90vh,900px);overflow:auto;padding:clamp(24px,5vw,38px);background:#fbfaf7;border:1px solid rgba(181,150,90,.48);border-radius:16px;box-shadow:0 28px 100px rgba(0,0,0,.22);animation:enquiryRise .22s ease-out}
+.enquiryClose{position:absolute;right:16px;top:12px;width:38px;height:38px;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--ink);font-size:1.6rem;cursor:pointer}
+.enquirySpark{display:grid;place-items:center;width:46px;height:46px;margin-bottom:17px;border:1px solid var(--goldSoft);border-radius:50%;color:var(--gold);font-size:1.4rem;background:linear-gradient(135deg,#fff,#f0e6d4)}
+.enquiryDialog h2{font-size:clamp(2rem,5vw,3rem);margin:12px 0}
+.enquiryDialog>p{color:var(--muted);line-height:1.65}
+.enquiryItem{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 0;padding:14px 16px;border:1px solid var(--line);border-radius:9px;background:#fff}
+.enquiryItem span{font-weight:800;white-space:nowrap}
+.enquiryForm{display:grid;gap:13px;margin-top:20px}
+.enquiryForm label{display:grid;gap:7px;font-size:.86rem;font-weight:800}
+.enquiryForm label span{display:inline;color:var(--muted);font-weight:500}
+.enquiryForm input,.enquiryForm textarea{width:100%;min-width:0;border:1px solid var(--line);border-radius:7px;background:#fff;padding:12px 13px;color:var(--ink)}
+.enquiryForm input:focus,.enquiryForm textarea:focus{outline:0;border-color:var(--gold);box-shadow:0 0 0 3px rgba(181,150,90,.14)}
+.enquiryForm textarea{min-height:90px;resize:vertical}
+.enquiryForm small{color:var(--muted);line-height:1.55}
+.enquirySubmit{width:100%;margin-top:3px}
+.enquiryError{padding:11px 13px;background:#fff0ed;color:#8a3025;border-radius:7px;font-size:.86rem;line-height:1.5}
+.enquirySuccess{display:grid;justify-items:center;gap:12px;padding:22px 0 5px}
+.enquirySuccess>span{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:#e5eee5;color:#315b3a;font-size:1.4rem}
+.enquirySuccess small{color:var(--muted)}
+.enquiryHoneypot{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}
+.hoursClosedLabel{display:flex;align-items:center;min-height:38px;color:var(--muted);font-size:.85rem}
+@keyframes enquiryFade{from{opacity:0}to{opacity:1}}
+@keyframes enquiryRise{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){.enquiryBackdrop,.enquiryDialog{animation:none!important}}
