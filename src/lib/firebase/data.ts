@@ -1,14 +1,14 @@
 import { addDoc, collection, deleteDoc, doc, getDocs, query, setDoc, updateDoc, where } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
-import type { ServiceCategory } from "@/lib/tripple-s/catalog";
+import { trippleSProductSeed, trippleSServiceSeed, type ServiceCategory } from "@/lib/tripple-s/catalog";
 
 export type ServiceRecord = {
   id: string; name: string; category: ServiceCategory; description: string; price: string; duration: string; active: boolean;
-  consultationRequired?: boolean; assessmentNote?: string; prep?: string; aftercare?: string;
+  consultationRequired?: boolean; assessmentNote?: string; prep?: string; aftercare?: string; imageUrl?: string;
 };
 
 export type ProductRecord = {
-  id: string; name: string; description: string; size?: string; price: string; active: boolean; purchaseMethod?: string;
+  id: string; name: string; description: string; size?: string; price: string; active: boolean; purchaseMethod?: string; imageUrl?: string;
 };
 
 export type BookingStatus = "NEW" | "REVIEWING" | "APPROVED" | "PAYMENT_PENDING" | "CONFIRMED" | "ARRIVED" | "COMPLETED" | "NEEDS_CONTACT" | "DECLINED" | "RESCHEDULED" | "CANCELLED" | "NO_SHOW" | "FOLLOW_UP";
@@ -31,14 +31,16 @@ export async function getServices(): Promise<ServiceRecord[]> {
 
 export async function getPublicServices(): Promise<ServiceRecord[]> {
   const snapshot = await getDocs(query(servicesCollection, where("active", "==", true)));
-  return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ServiceRecord, "id">) }));
+  const records = snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ServiceRecord, "id">) }));
+  return records.length ? records : trippleSServiceSeed;
 }
 export async function saveServiceRecord(item: ServiceRecord) { await setDoc(doc(db, "services", item.id), item); }
 export async function deleteServiceRecord(id: string) { await deleteDoc(doc(db, "services", id)); }
 
 export async function getPublicProducts(): Promise<ProductRecord[]> {
   const snapshot = await getDocs(query(productsCollection, where("active", "==", true)));
-  return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ProductRecord, "id">) }));
+  const records = snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ProductRecord, "id">) }));
+  return records.length ? records : trippleSProductSeed;
 }
 
 export async function getProducts(): Promise<ProductRecord[]> {
