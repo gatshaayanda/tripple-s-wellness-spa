@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { createBookingRequest, getPublicServices, type ServiceRecord } from "@/lib/firebase/data";
+import { createBookingRequest, getClinicSettings, getPublicServices, type ServiceRecord } from "@/lib/firebase/data";
+import { defaultClinicSettings, dayLabels, isAnnouncementVisible, type ClinicSettings, type DayKey } from "@/lib/tripple-s/clinic-settings";
 
 const whatsapp = "https://wa.me/26774866703?text=Hello%20Tripple%20S%2C%20I%27d%20like%20to%20enquire.";
 function localDateValue() {
@@ -16,6 +17,8 @@ export default function BookForm() {
   const searchParams = useSearchParams();
   const requestedService = searchParams.get("service") ?? "";
   const [services, setServices] = useState<ServiceRecord[]>([]);
+  const [clinicSettings, setClinicSettings] = useState<ClinicSettings>(defaultClinicSettings);
+  const [preferredDate, setPreferredDate] = useState("");
   const [loadingServices, setLoadingServices] = useState(true);
   const [submitted, setSubmitted] = useState(false);
   const [reference, setReference] = useState("");
@@ -26,14 +29,18 @@ export default function BookForm() {
   const minDate = localDateValue();
 
   useEffect(() => {
-    void getPublicServices()
-      .then((items) => setServices(items.filter((item) => item.active)))
+    void Promise.all([getPublicServices(), getClinicSettings()])
+      .then(([items, settings]) => { setServices(items.filter((item) => item.active)); setClinicSettings(settings); })
       .catch(() => setServices([]))
       .finally(() => setLoadingServices(false));
   }, []);
 
   useEffect(() => setServiceId(requestedService), [requestedService]);
   const selected = useMemo(() => services.find((item) => item.id === serviceId), [services, serviceId]);
+  const dayKeys: DayKey[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  const selectedDay = preferredDate ? dayKeys[new Date(`${preferredDate}T12:00:00`).getDay()] : null;
+  const selectedHours = selectedDay ? clinicSettings.openingHours[selectedDay] : undefined;
+  const showAnnouncement = isAnnouncementVisible(clinicSettings);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -45,9 +52,17 @@ export default function BookForm() {
 
     const requestedDate = String(form.get("date") ?? "").trim();
     if (requestedDate && requestedDate < minDate) {
-      setError("Please choose today or a future date.");
-      setBusy(false);
-      return;
+      setError("Please choose today or a future date."); setBusy(false); return;
+    }
+    const dayKeys: DayKey[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+    const requestedDay = requestedDate ? dayKeys[new Date(`${requestedDate}T12:00:00`).getDay()] : null;
+    const requestedHours = requestedDay ? clinicSettings.openingHours[requestedDay] : undefined;
+    if (requestedDate && requestedHours && !requestedHours.open) {
+      setError(`Tripple S is not accepting requests for ${dayLabels[requestedDay!]} under the current hours. Please choose another day or leave the date open.`); setBusy(false); return;
+    }
+    const requestedTime = String(form.get("time") ?? "").trim();
+    if (requestedDate && requestedTime && requestedHours?.open && (requestedTime < requestedHours.start || requestedTime > requestedHours.end)) {
+      setError(`Please choose a time between ${requestedHours.start} and ${requestedHours.end} for your selected day.`); setBusy(false); return;
     }
     const service = services.find((item) => item.id === String(form.get("serviceId") ?? ""));
     const email = String(form.get("email") ?? "").trim();
@@ -89,6 +104,7 @@ export default function BookForm() {
 
   return <main className="bookPage bookPageEditorial">
     <nav className="nav"><div className="container navInner"><Link href="/" className="brand" aria-label="Tripple S Wellness Spa home"><span className="brandMark">S</span><span>TRIPPLE S<span>WELLNESS SPA</span></span></Link><Link href="/treatments" className="textLink">Browse treatments & prices</Link></div></nav>
+    {showAnnouncement && <div className="container publicAnnouncement" role="status"><strong>{clinicSettings.announcement.title || "Clinic notice"}</strong><span>{clinicSettings.announcement.message}</span></div>}
     <div className="bookingIntro"><div className="bookingIntroInner"><span className="kicker">Your Tripple S visit</span><h1>A few details. <em>We’ll take it from here.</em></h1><p>Tell us how to reach you and what you have in mind. You can choose a treatment or ask the clinical team to guide you.</p><div className="bookingSteps"><span><b>01</b> Your details</span><span><b>02</b> Your preferences</span><span><b>03</b> We confirm with you</span></div></div></div>
     <div className="formWrap formWrapWide">
       {submitted ? <div className="formCard confirm confirmEditorial"><span className="confirmIcon">✦</span><span className="kicker">Request received</span><h2>Thank you. We’ll be in touch.</h2><p>Your reference is <strong>#{reference}</strong>. Keep it for your records.</p><p>The team will review your request and contact you to discuss timing and next steps. This is a request, not a confirmed appointment.</p><div className="actions" style={{ justifyContent: "center" }}><Link href="/" className="button buttonPrimary">Back to Tripple S</Link><a href={whatsapp} className="button buttonLight">Contact the clinic</a></div></div> :
@@ -107,7 +123,7 @@ export default function BookForm() {
             {selected && <div className="selectedTreatment"><div><span className="kicker">Your selection</span><strong>{selected.name}</strong><p>{selected.description}</p></div><div className="selectedTreatmentPrice"><strong>{selected.price}</strong><span>{selected.duration}</span></div>{selected.consultationRequired && <p className="selectedTreatmentNote">Clinical assessment may be required. Suitability is determined by the Tripple S clinical team.</p>}</div>}
           </section>
           <section className="bookingFormSection"><div className="bookingSectionHeading"><span>03</span><div><h2>When works for you?</h2><p>These are preferences only. The team will confirm the actual appointment time.</p></div></div>
-            <div className="formGrid"><div className="field"><label htmlFor="date">Preferred date <span>(optional)</span></label><input id="date" name="date" type="date" min={minDate}/><small>Sunday requests are welcome by appointment. Your preferred date and time are not confirmed until the team contacts you.</small></div><div className="field"><label htmlFor="time">Preferred time <span>(optional)</span></label><input id="time" name="time" type="time"/></div><div className="field fieldFull"><label htmlFor="message">Anything else we should know? <span>(optional)</span></label><textarea id="message" name="message" placeholder="Your goal, preferred timing or a question. Please do not include sensitive medical details here."/></div></div>
+            <div className="formGrid"><div className="field"><label htmlFor="date">Preferred date <span>(optional)</span></label><input id="date" name="date" type="date" min={minDate} value={preferredDate} onChange={event=>setPreferredDate(event.target.value)}/><small>{selectedHours?.open ? `${selectedDay ? dayLabels[selectedDay] : ""}: ${selectedHours.byAppointment ? "by appointment" : "open"} · ${selectedHours.start}–${selectedHours.end}. ` : ""}Sunday requests are welcome by appointment. Your preferred date and time are not confirmed until the team contacts you.</small></div><div className="field"><label htmlFor="time">Preferred time <span>(optional)</span></label><input id="time" name="time" type="time" min={selectedHours?.open ? selectedHours.start : undefined} max={selectedHours?.open ? selectedHours.end : undefined} disabled={!!selectedDay && !selectedHours?.open}/></div><div className="field fieldFull"><label htmlFor="message">Anything else we should know? <span>(optional)</span></label><textarea id="message" name="message" placeholder="Your goal, preferred timing or a question. Please do not include sensitive medical details here."/></div></div>
           </section>
           {error && <p className="bookingError" role="alert">{error}</p>}
           <button className="button buttonPrimary bookingSubmit" type="submit" disabled={busy}>{busy ? "Sending your request…" : "Send appointment request"} <span aria-hidden="true">→</span></button>
