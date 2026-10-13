@@ -43,7 +43,7 @@ export const defaultClinicSettings: ClinicSettings = {
   announcement: { active: false, title: "", message: "", startDate: "", endDate: "" },
 };
 
-export function isAnnouncementVisible(settings: ClinicSettings, today = new Date().toISOString().slice(0, 10)) {
+export function isAnnouncementVisible(settings: ClinicSettings, today = new Date(Date.now() + 2 * 3600000).toISOString().slice(0, 10)) {
   const announcement = settings.announcement;
   return announcement.active && !!announcement.message.trim()
     && (!announcement.startDate || announcement.startDate <= today)
