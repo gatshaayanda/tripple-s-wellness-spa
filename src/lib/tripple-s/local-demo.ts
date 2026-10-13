@@ -68,3 +68,26 @@ export function deleteLocalDemoRecord(id: string): void {
 export function makeLocalDemoId(): string {
   return "demo-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
 }
+
+export function getLocalDemoBucket<T extends { id: string }>(bucket: string): T[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const value: unknown = JSON.parse(window.localStorage.getItem("tripple-s-local-demo-bucket-" + bucket) || "[]");
+    return Array.isArray(value) ? value as T[] : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveLocalDemoBucketRecord<T extends { id: string }>(bucket: string, record: T): void {
+  if (typeof window === "undefined") throw new Error("Local demo storage is only available in this browser.");
+  const records = getLocalDemoBucket<T>(bucket).filter(item => item.id !== record.id);
+  records.unshift(record);
+  window.localStorage.setItem("tripple-s-local-demo-bucket-" + bucket, JSON.stringify(records.slice(0, 500)));
+}
+
+export function deleteLocalDemoBucketRecord(bucket: string, id: string): void {
+  if (typeof window === "undefined") return;
+  const records = getLocalDemoBucket(bucket).filter(item => item.id !== id);
+  window.localStorage.setItem("tripple-s-local-demo-bucket-" + bucket, JSON.stringify(records));
+}
