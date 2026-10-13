@@ -316,11 +316,12 @@ The main source does **not** currently prove real slot availability, instant boo
 - Give staff a simple capacity-aware calendar/availability control only after actual hours, treatment durations, buffers, staff/room capacity and Monday/Wednesday limits are supplied. Until then, manual review and explicit confirmation remain the source of truth.
 - Make the customer's next step unmistakable: request received, under review, clarification needed, payment instructions (only if owner-approved), confirmed, rescheduled/cancelled, attended/completed. Never conflate request, confirmation or payment.
 
-**P2 — Help clients feel cared for and return**
-- Add a secure, low-friction way to retrieve appointment status without forcing account creation before the first request.
-- Use owner-approved reminder and reschedule/cancel workflows. Start with staff-triggered WhatsApp templates if that matches real operations; only automate a channel after its provider, permissions, cost and actual delivery can be verified.
-- Add treatment-specific preparation/aftercare only when supplied/approved by the clinical team; add follow-up and review requests with consent and no fabricated social proof.
+**P2 — Returning-client account and loyalty (after the first-visit journey is proven)**
+- The first appointment request must remain guest-first: no account, password, app installation or email requirement before a customer can enquire.
+- Add a low-friction customer account only when it provides a concrete benefit: safely retrieve their own requests/appointments, maintain contact preferences and access owner-approved member perks or loyalty rewards. Define the actual perks and reward rules with the business before publishing promises.
+- Do **not** add automated WhatsApp reminders, rescheduling/cancellation workflows, treatment-specific preparation/aftercare campaigns, follow-up/review request campaigns or automated messaging as part of this scope unless the product owner explicitly reopens it.
 - Keep skincare products as an accurate client-facing catalogue/enquiry flow until the owner explicitly approves stock, ordering, fulfilment and payment workflows. Supplier/vendor management and inventory ERP are not MVP scope.
+- Do not invent treatment bundles or package prices: the inspected official public website publishes treatment prices and five skincare products, but no defined package menu. Admin may add a package under the editable “Packages” catalogue category when the business supplies approved package names, contents and prices.
 
 **P3 — Measure and improve based on real outcomes**
 - Add privacy-minimised, owner-only analytics for source → treatment views → booking starts → submitted requests → response time → confirmations → attendance/completion → repeat visits. Do not capture clinical notes or unnecessary personal data in analytics.
@@ -331,7 +332,7 @@ The main source does **not** currently prove real slot availability, instant boo
 - Offer two calm entry paths: **“I know what I want”** (browse/search treatments) and **“Help me choose”** (request a consultation). The app helps clients ask; clinical suitability stays with the team.
 - Reduce cognitive load: clear category names, transparent published prices/durations, labels above fields, short forms, visible next steps, forgiving validation and recoverable errors. Do not force sign-in or installation before the first request.
 - Build trust through accurate service information, clear clinical oversight, privacy, real consented reviews, authentic team/clinic details and honest status messages—not artificial scarcity, pressure, invented results or fake testimonials.
-- Reminders are a high-value candidate: a 2016 systematic review/meta-analysis found electronic text reminders were associated with improved attendance and fewer no-shows; a 2023 systematic review of behavioral interventions also found substantial support for reminders, while noting results vary by context. Measure Tripple S's own outcomes before claiming impact.
+- Apply behavioral-science findings to the in-app experience: reduce cognitive load, show clear prices, make the next step predictable and keep first-time requests short. Do not add reminder campaigns without explicit product-owner approval.
 - Competitor benchmark (not a template to copy): local providers such as AesthetiQue, Phemo Aesthetics and Medi Glow publish service information/prices and offer booking or product pathways; some use Fresha, while Medi Glow also presents its own product/booking experience. Tripple S should compete on its own calm, medically responsible client-care relationship and operational follow-through—not by becoming a marketplace.
 - Phaser is **not appropriate for this product's core workflow**: a medical-aesthetics booking/client-care app has no demonstrated need for a game engine. Do not add game mechanics or Phaser dependencies unless a separate, validated product requirement justifies them.
 
@@ -353,3 +354,15 @@ Do not copy another app's branding, business schema, credentials, database, depl
 ### Acceptance rule
 
 Use The Plug's evidence vocabulary: **PASS / FAIL / NOT RUN / BLOCKED**. A code review, green build, READY deployment, browser permission prompt or notification-send response is not proof of the full customer outcome. Verify the customer journey, authorized admin workflow, server/database access boundaries, deployment identity, PWA/private-cache behavior and real-device behavior separately. Do not deploy, merge, deploy Firebase rules/indexes, mutate production data or incur material cost without explicit authorization.
+
+
+### Product owner QA direction — landing and booking slice (2026-10-13)
+
+- The app is intended to become Tripple S's primary digital front desk; the owned website is a verified source for approved service/product content, not a second booking destination to promote instead of the app.
+- Landing page must show a real seeded treatment menu with published prices/durations, a product catalogue with published prices, clear booking actions, and explicit Sunday closure. Monday and Wednesday are busy; do not pretend a preferred date is confirmed availability.
+- Use tasteful image placeholders until the owner supplies approved social/clinic/product imagery. Admin can manage public image URLs alongside service/product descriptions, prices, durations, active visibility and the “Packages” catalogue category.
+- The footer contains a small one-word **Admin** link to the existing protected `/admin` sign-in; do not expose operational content or add self-service admin registration.
+- Booking must feel light for new and returning clients. Account creation must not block the first request. A real customer account and loyalty/perks feature is a later, separately verified slice; do not claim membership benefits until the owner defines them and the account flow is implemented.
+- Do not build reminder automation, rescheduling/cancellation workflows, treatment-specific prep/aftercare campaigns or follow-up/review request campaigns in this slice.
+- Official public source checked: https://trippleswellnessspa.com/treatments and https://trippleswellnessspa.com/ . Published service and skincare-product prices are seeded in `src/lib/tripple-s/catalog.ts`; the owner can edit records in the admin catalogue. The public site does not currently publish named packages/prices, so no package pricing is fabricated.
+- QA checkpoint is the pushed branch and exact SHA. Do not merge into `main` or deploy production/Firebase rules without explicit authorization.
