@@ -1,4 +1,4 @@
-export type ServiceCategory = "IV Wellness Drips" | "Medical Aesthetics" | "Skin Treatments" | "Body Contouring" | "Wellness" | "Consultations";
+export type ServiceCategory = "IV Wellness Drips" | "Medical Aesthetics" | "Skin Treatments" | "Body Contouring" | "Wellness" | "Consultations" | "Packages";
 
 export type ServiceSeed = {
   id: string; name: string; category: ServiceCategory; description: string; price: string; duration: string; active: boolean;
@@ -33,4 +33,10 @@ export const trippleSServiceSeed: ServiceSeed[] = [
   { id: "skin-consultation", name: "Skin Consultation", category: "Consultations", description: "Professional skin consultation with the Tripple S clinical team.", price: "P400", duration: "30 min", active: true }
 ];
 
-export const trippleSProductSeed: never[] = [];
+export const trippleSProductSeed = [
+  { id: "dark-spot-serum", name: "Dark Spot Serum", description: "30ml · Product information from the official Tripple S website.", size: "30ml", price: "P1,200", active: true, purchaseMethod: "Enquire with Tripple S" },
+  { id: "vitamin-c-serum", name: "Vitamin C Serum", description: "30ml · Product information from the official Tripple S website.", size: "30ml", price: "P950", active: true, purchaseMethod: "Enquire with Tripple S" },
+  { id: "complexion-corrector-cream", name: "Complexion Corrector Cream", description: "100ml · Product information from the official Tripple S website.", size: "100ml", price: "P2,000", active: true, purchaseMethod: "Enquire with Tripple S" },
+  { id: "anti-acne-serum", name: "Anti-Acne Serum", description: "30ml · Product information from the official Tripple S website.", size: "30ml", price: "P950", active: true, purchaseMethod: "Enquire with Tripple S" },
+  { id: "retinol-serum", name: "Retinol Serum", description: "Product information from the official Tripple S website.", size: "—", price: "P1,300", active: true, purchaseMethod: "Enquire with Tripple S" },
+];

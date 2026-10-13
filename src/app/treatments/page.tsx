@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getPublicServices, type ServiceRecord } from "@/lib/firebase/data";
 
-const categories = ["All", "IV Wellness Drips", "Medical Aesthetics", "Skin Treatments", "Body Contouring", "Wellness", "Consultations"];
+const categories = ["All", "IV Wellness Drips", "Medical Aesthetics", "Skin Treatments", "Body Contouring", "Wellness", "Consultations", "Packages"];
 
 export default function TreatmentsPage() {
   const [services, setServices] = useState<ServiceRecord[]>([]);
