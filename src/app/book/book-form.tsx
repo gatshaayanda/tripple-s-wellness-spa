@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { getClinicSettings, getPublicServices, type ServiceRecord } from "@/lib/firebase/data";
 import { defaultClinicSettings, dayLabels, isAnnouncementVisible, type ClinicSettings, type DayKey } from "@/lib/tripple-s/clinic-settings";
-import { getLocalDemoRecords, makeLocalDemoId, saveLocalDemoRecord } from "@/lib/tripple-s/local-demo";
+import { getLocalDemoBucket, getLocalDemoRecords, makeLocalDemoId, saveLocalDemoRecord } from "@/lib/tripple-s/local-demo";
 
 const whatsapp = "https://wa.me/26774866703?text=Hello%20Tripple%20S%2C%20I%27d%20like%20to%20enquire.";
 function localDateValue() {
@@ -73,12 +73,14 @@ export default function BookForm() {
     const toMinutes = (value: string) => Number(value.slice(0, 2)) * 60 + Number(value.slice(3, 5));
     const toClock = (value: number) => String(Math.floor(value / 60)).padStart(2, "0") + ":" + String(value % 60).padStart(2, "0");
     const occupied = getLocalDemoRecords<{ id: string; preferredDate?: string; preferredTime?: string; durationSnapshot?: string; status?: string }>().filter(item => item.preferredDate === preferredDate && item.preferredTime && !["CANCELLED", "DECLINED", "RESCHEDULED"].includes(String(item.status)));
+    const calendarEntries = getLocalDemoBucket<{ id: string; date: string; startTime: string; endTime: string; kind: string }>("calendar").filter(item => item.date === preferredDate);
     const interval = Math.max(15, Number(clinicSettings.bookingRules.slotIntervalMinutes) || 15);
     const duration = Math.max(15, Number(selectedDuration) || 30);
     const slots: string[] = [];
     for (let start = toMinutes(hours.start); start + duration <= toMinutes(hours.end); start += interval) {
-      const overlaps = occupied.some(item => { const existingStart = toMinutes(String(item.preferredTime)); const existingDuration = Math.max(15, Number(String(item.durationSnapshot || "30").match(/\d+/)?.[0] || 30)); return start < existingStart + existingDuration && start + duration > existingStart; });
-      if (!overlaps) slots.push(toClock(start));
+      const requestOverlap = occupied.some(item => { const existingStart = toMinutes(String(item.preferredTime)); const existingDuration = Math.max(15, Number(String(item.durationSnapshot || "30").match(/\d+/)?.[0] || 30)); return start < existingStart + existingDuration && start + duration > existingStart; });
+      const calendarOverlap = calendarEntries.some(item => start < toMinutes(item.endTime) && start + duration > toMinutes(item.startTime));
+      if (!requestOverlap && !calendarOverlap) slots.push(toClock(start));
     }
     setAvailableSlots(slots); setSelectedTime(""); setAvailabilityError(""); setAvailabilityNote("Local demo calendar: sample times only. This browser cannot verify the clinic live schedule."); setLocalDemoMode(true);
   }
