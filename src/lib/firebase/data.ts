@@ -30,17 +30,29 @@ export async function getServices(): Promise<ServiceRecord[]> {
 }
 
 export async function getPublicServices(): Promise<ServiceRecord[]> {
-  const snapshot = await getDocs(query(servicesCollection, where("active", "==", true)));
-  const records = snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ServiceRecord, "id">) }));
-  return records.length ? records : trippleSServiceSeed;
+  try {
+    const snapshot = await getDocs(query(servicesCollection, where("active", "==", true)));
+    const records = snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ServiceRecord, "id">) }));
+    return records.length ? records : trippleSServiceSeed;
+  } catch (error) {
+    // Keep public discovery and treatment-linked booking usable if the catalogue read is unavailable.
+    // The fallback is the owner-reviewed seed catalogue; booking requests still require Firebase to accept the write.
+    console.warn("[Tripple S] public services unavailable; using the seed catalogue", error);
+    return trippleSServiceSeed;
+  }
 }
 export async function saveServiceRecord(item: ServiceRecord) { await setDoc(doc(db, "services", item.id), item); }
 export async function deleteServiceRecord(id: string) { await deleteDoc(doc(db, "services", id)); }
 
 export async function getPublicProducts(): Promise<ProductRecord[]> {
-  const snapshot = await getDocs(query(productsCollection, where("active", "==", true)));
-  const records = snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ProductRecord, "id">) }));
-  return records.length ? records : trippleSProductSeed;
+  try {
+    const snapshot = await getDocs(query(productsCollection, where("active", "==", true)));
+    const records = snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ProductRecord, "id">) }));
+    return records.length ? records : trippleSProductSeed;
+  } catch (error) {
+    console.warn("[Tripple S] public products unavailable; using the seed catalogue", error);
+    return trippleSProductSeed;
+  }
 }
 
 export async function getProducts(): Promise<ProductRecord[]> {
