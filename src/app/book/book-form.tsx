@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { createBookingRequest, getClinicSettings, getPublicServices, type ServiceRecord } from "@/lib/firebase/data";
+import { getClinicSettings, getPublicServices, type ServiceRecord } from "@/lib/firebase/data";
 import { defaultClinicSettings, dayLabels, isAnnouncementVisible, type ClinicSettings, type DayKey } from "@/lib/tripple-s/clinic-settings";
 
 const whatsapp = "https://wa.me/26774866703?text=Hello%20Tripple%20S%2C%20I%27d%20like%20to%20enquire.";
@@ -19,6 +19,10 @@ export default function BookForm() {
   const [services, setServices] = useState<ServiceRecord[]>([]);
   const [clinicSettings, setClinicSettings] = useState<ClinicSettings>(defaultClinicSettings);
   const [preferredDate, setPreferredDate] = useState("");
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [selectedTime, setSelectedTime] = useState("");
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState("");
   const [loadingServices, setLoadingServices] = useState(true);
   const [submitted, setSubmitted] = useState(false);
   const [reference, setReference] = useState("");
@@ -36,10 +40,23 @@ export default function BookForm() {
   }, []);
 
   useEffect(() => setServiceId(requestedService), [requestedService]);
+
+  useEffect(() => {
+    setSelectedTime(""); setAvailableSlots([]); setAvailabilityError("");
+    if (!preferredDate) return;
+    let cancelled = false; setLoadingSlots(true);
+    fetch("/api/availability?date=" + encodeURIComponent(preferredDate) + "&duration=" + encodeURIComponent(selectedDuration))
+      .then(async response => { const data=await response.json(); if(!response.ok) throw new Error(data.error||"Could not load available times."); return data as {slots:string[]}; })
+      .then(data=>{if(!cancelled)setAvailableSlots(data.slots||[]);})
+      .catch(error=>{if(!cancelled)setAvailabilityError(error instanceof Error?error.message:"Could not load available times.");})
+      .finally(()=>{if(!cancelled)setLoadingSlots(false);});
+    return ()=>{cancelled=true;};
+  }, [preferredDate, selectedDuration]);
   const selected = useMemo(() => services.find((item) => item.id === serviceId), [services, serviceId]);
   const dayKeys: DayKey[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
   const selectedDay = preferredDate ? dayKeys[new Date(`${preferredDate}T12:00:00`).getDay()] : null;
   const selectedHours = selectedDay ? clinicSettings.openingHours[selectedDay] : undefined;
+  const selectedDuration = selected?.duration.match(/\d+/)?.[0] ?? "30";
   const showAnnouncement = isAnnouncementVisible(clinicSettings);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -51,23 +68,15 @@ export default function BookForm() {
     setError("");
 
     const requestedDate = String(form.get("date") ?? "").trim();
-    if (requestedDate && requestedDate < minDate) {
-      setError("Please choose today or a future date."); setBusy(false); return;
-    }
-    const dayKeys: DayKey[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-    const requestedDay = requestedDate ? dayKeys[new Date(`${requestedDate}T12:00:00`).getDay()] : null;
-    const requestedHours = requestedDay ? clinicSettings.openingHours[requestedDay] : undefined;
-    if (requestedDate && requestedHours && !requestedHours.open) {
-      setError(`Tripple S is not accepting requests for ${dayLabels[requestedDay!]} under the current hours. Please choose another day or leave the date open.`); setBusy(false); return;
-    }
-    const requestedTime = String(form.get("time") ?? "").trim();
-    if (requestedDate && requestedTime && requestedHours?.open && (requestedTime < requestedHours.start || requestedTime > requestedHours.end)) {
-      setError(`Please choose a time between ${requestedHours.start} and ${requestedHours.end} for your selected day.`); setBusy(false); return;
-    }
+    if (!requestedDate || !selectedTime) { setError("Choose a date and one of the available appointment times."); setBusy(false); return; }
+    const requestedDay = dayKeys[new Date(requestedDate + "T12:00:00").getDay()];
+    const requestedHours = clinicSettings.openingHours[requestedDay];
+    if (!requestedHours?.open || !availableSlots.includes(selectedTime)) { setError("That time is no longer available. Please choose another slot."); setBusy(false); return; }
     const service = services.find((item) => item.id === String(form.get("serviceId") ?? ""));
     const email = String(form.get("email") ?? "").trim();
-    const preferredTime = String(form.get("time") ?? "").trim();
+    const preferredTime = selectedTime;
     const message = String(form.get("message") ?? "").trim();
+    const discountCode = String(form.get("discountCode") ?? "").trim();
     const request = {
       createdAt: new Date().toISOString(),
       name: String(form.get("name") ?? "").trim(),
@@ -81,6 +90,7 @@ export default function BookForm() {
       ...(requestedDate ? { preferredDate: requestedDate } : {}),
       ...(preferredTime ? { preferredTime } : {}),
       ...(message ? { message } : {}),
+      ...(discountCode ? { discountCode } : {}),
     };
 
     if (!request.name || !request.phone) {
@@ -90,13 +100,15 @@ export default function BookForm() {
     }
 
     try {
-      const id = await createBookingRequest(request);
-      setReference(id.slice(0, 8).toUpperCase());
+      const response = await fetch("/api/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...request, time: selectedTime, discountCode }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "The appointment request could not be saved.");
+      setReference(String(result.id).slice(0, 8).toUpperCase());
       setSubmitted(true);
       formElement.reset();
     } catch (err) {
       console.error("[Tripple S] appointment request failed", err);
-      setError("We could not record your request right now. Nothing has been confirmed. Please try again or contact the clinic.");
+      setError(err instanceof Error ? err.message : "We could not record your request. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -107,7 +119,7 @@ export default function BookForm() {
     {showAnnouncement && <div className="container publicAnnouncement" role="status"><strong>{clinicSettings.announcement.title || "Clinic notice"}</strong><span>{clinicSettings.announcement.message}</span></div>}
     <div className="bookingIntro"><div className="bookingIntroInner"><span className="kicker">Your Tripple S visit</span><h1>A few details. <em>We’ll take it from here.</em></h1><p>Tell us how to reach you and what you have in mind. You can choose a treatment or ask the clinical team to guide you.</p><div className="bookingSteps"><span><b>01</b> Your details</span><span><b>02</b> Your preferences</span><span><b>03</b> We confirm with you</span></div></div></div>
     <div className="formWrap formWrapWide">
-      {submitted ? <div className="formCard confirm confirmEditorial"><span className="confirmIcon">✦</span><span className="kicker">Request received</span><h2>Thank you. We’ll be in touch.</h2><p>Your reference is <strong>#{reference}</strong>. Keep it for your records.</p><p>The team will review your request and contact you to discuss timing and next steps. This is a request, not a confirmed appointment.</p><div className="actions" style={{ justifyContent: "center" }}><Link href="/" className="button buttonPrimary">Back to Tripple S</Link><a href={whatsapp} className="button buttonLight">Contact the clinic</a></div></div> :
+      {submitted ? <div className="formCard confirm confirmEditorial"><span className="confirmIcon">✦</span><span className="kicker">Request received</span><h2>Thank you. We’ll be in touch.</h2><p>Your reference is <strong>#{reference}</strong>. Keep it for your records.</p><p>Your selected slot is held while the team reviews your request. The team will contact you to confirm the appointment and next steps.</p><div className="actions" style={{ justifyContent: "center" }}><Link href="/" className="button buttonPrimary">Back to Tripple S</Link><a href={whatsapp} className="button buttonLight">Contact the clinic</a></div></div> :
       <div className="bookingLayout">
         <form className="formCard bookingForm" onSubmit={handleSubmit}>
           <section className="bookingFormSection"><div className="bookingSectionHeading"><span>01</span><div><h2>How can we reach you?</h2><p>Just the essentials to get your request to the right person.</p></div></div>
@@ -122,14 +134,14 @@ export default function BookForm() {
             <div className="field"><label htmlFor="serviceId">Choose a treatment or consultation</label><select id="serviceId" name="serviceId" value={serviceId} onChange={(event) => setServiceId(event.target.value)}><option value="">{loadingServices ? "Loading the menu…" : "I’m not sure — help me choose"}</option>{services.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.price} · {item.duration}</option>)}</select><small>You can leave this blank. The clinical team can help you decide.</small></div>
             {selected && <div className="selectedTreatment"><div><span className="kicker">Your selection</span><strong>{selected.name}</strong><p>{selected.description}</p></div><div className="selectedTreatmentPrice"><strong>{selected.price}</strong><span>{selected.duration}</span></div>{selected.consultationRequired && <p className="selectedTreatmentNote">Clinical assessment may be required. Suitability is determined by the Tripple S clinical team.</p>}</div>}
           </section>
-          <section className="bookingFormSection"><div className="bookingSectionHeading"><span>03</span><div><h2>When works for you?</h2><p>These are preferences only. The team will confirm the actual appointment time.</p></div></div>
-            <div className="formGrid"><div className="field"><label htmlFor="date">Preferred date <span>(optional)</span></label><input id="date" name="date" type="date" min={minDate} value={preferredDate} onChange={event=>setPreferredDate(event.target.value)}/><small>{selectedHours?.open ? `${selectedDay ? dayLabels[selectedDay] : ""}: ${selectedHours.byAppointment ? "by appointment" : "open"} · ${selectedHours.start}–${selectedHours.end}. ` : ""}Sunday requests are welcome by appointment. Your preferred date and time are not confirmed until the team contacts you.</small></div><div className="field"><label htmlFor="time">Preferred time <span>(optional)</span></label><input id="time" name="time" type="time" min={selectedHours?.open ? selectedHours.start : undefined} max={selectedHours?.open ? selectedHours.end : undefined} disabled={!!selectedDay && !selectedHours?.open}/></div><div className="field fieldFull"><label htmlFor="message">Anything else we should know? <span>(optional)</span></label><textarea id="message" name="message" placeholder="Your goal, preferred timing or a question. Please do not include sensitive medical details here."/></div></div>
+          <section className="bookingFormSection"><div className="bookingSectionHeading"><span>03</span><div><h2>When works for you?</h2><p>Choose an available slot. The team will confirm your appointment after reviewing the request.</p></div></div>
+            <div className="formGrid"><div className="field"><label htmlFor="date">Appointment date</label><input id="date" name="date" type="date" min={minDate} value={preferredDate} onChange={event=>setPreferredDate(event.target.value)} required/><small>{selectedHours?.open ? (selectedDay ? dayLabels[selectedDay] : "") + ": " + (selectedHours.byAppointment ? "by appointment" : "available") + " · " + selectedHours.start + "–" + selectedHours.end + ". " : ""}Choose from the available times below.</small></div><div className="field fieldFull"><label>Available appointment times</label>{!preferredDate?<p className="slotHint">Choose a date to see available times.</p>:loadingSlots?<p className="slotHint">Checking availability…</p>:availabilityError?<p className="slotError" role="alert">{availabilityError}</p>:availableSlots.length===0?<p className="slotHint">No slots available for this date. Try another day or contact the clinic.</p>:<div className="slotGrid" role="group" aria-label="Available appointment times">{availableSlots.map(time=><button key={time} type="button" className={selectedTime===time?"slotButton selected":"slotButton"} aria-pressed={selectedTime===time} onClick={()=>setSelectedTime(time)}>{time}</button>)}</div>}</div><div className="field"><label htmlFor="discountCode">Offer code <span>(optional)</span></label><input id="discountCode" name="discountCode" autoComplete="off" placeholder="Enter a published offer code"/></div><div className="field fieldFull"><label htmlFor="message">Anything else we should know? <span>(optional)</span></label><textarea id="message" name="message" placeholder="Your goal, preferred timing or a question. Please do not include sensitive medical details here."/></div></div>
           </section>
           {error && <p className="bookingError" role="alert">{error}</p>}
           <button className="button buttonPrimary bookingSubmit" type="submit" disabled={busy}>{busy ? "Sending your request…" : "Send appointment request"} <span aria-hidden="true">→</span></button>
           <p className="bookingPrivacy">Your details are used to respond to this request. Please do not enter sensitive medical information in this form.</p>
         </form>
-        <aside className="bookingAside"><div className="bookingAsideImage"><span className="placeholderMonogram">S</span><span className="placeholderLabel">CLINIC PHOTOGRAPHY PLACEHOLDER</span></div><div className="bookingAsideContent"><span className="kicker">A clear next step</span><h3>We’ll confirm with you personally.</h3><ol><li>Your request reaches the Tripple S team.</li><li>The team reviews your preferred treatment and timing.</li><li>You are contacted to confirm the appointment details.</li></ol><p>Sending a request does not confirm a booking or payment.</p><div className="asideContact"><strong>Visit us</strong><span>Plot 943, Kaunda Road, Gaborone</span><span>Monday – Saturday · 8:00 – 17:00</span><span>Sunday · By appointment</span></div><a href={whatsapp} className="textLink">Need help? Contact the clinic →</a></div></aside>
+        <aside className="bookingAside"><div className="bookingAsideImage"><span className="placeholderMonogram">S</span><span className="placeholderLabel">CLINIC PHOTOGRAPHY PLACEHOLDER</span></div><div className="bookingAsideContent"><span className="kicker">A clear next step</span><h3>We’ll confirm with you personally.</h3><ol><li>Your request reaches the Tripple S team.</li><li>The team reviews your preferred treatment and timing.</li><li>You are contacted to confirm the appointment details.</li></ol><p>Sending a request does not confirm a booking or payment.</p><div className="asideContact"><strong>Visit us</strong><span>Plot 943, Kaunda Road, Gaborone</span><span>Hours and appointment-only days are managed by the clinic.</span></div><a href={whatsapp} className="textLink">Need help? Contact the clinic →</a></div></aside>
       </div>}
     </div>
   </main>;

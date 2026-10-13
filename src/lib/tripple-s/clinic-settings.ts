@@ -9,6 +9,7 @@ export type DayHours = {
 
 export type ClinicSettings = {
   openingHours: Record<DayKey, DayHours>;
+  bookingRules: { slotIntervalMinutes: number; minimumNoticeHours: number; advanceBookingDays: number; bufferMinutes: number };
   announcement: {
     active: boolean;
     title: string;
@@ -38,6 +39,7 @@ export const defaultClinicSettings: ClinicSettings = {
     saturday: { open: true, byAppointment: false, start: "08:00", end: "17:00" },
     sunday: { open: true, byAppointment: true, start: "08:00", end: "17:00" },
   },
+  bookingRules: { slotIntervalMinutes: 15, minimumNoticeHours: 24, advanceBookingDays: 90, bufferMinutes: 0 },
   announcement: { active: false, title: "", message: "", startDate: "", endDate: "" },
 };
 

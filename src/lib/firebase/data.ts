@@ -1,5 +1,5 @@
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
+import { auth, db } from "@/lib/firebase/client";
 import { trippleSProductSeed, trippleSServiceSeed, type ServiceCategory } from "@/lib/tripple-s/catalog";
 import { defaultClinicSettings, type ClinicSettings } from "@/lib/tripple-s/clinic-settings";
 
@@ -17,7 +17,7 @@ export type PaymentStatus = "PAYMENT_PENDING" | "PAYMENT_INSTRUCTIONS" | "PAYMEN
 
 export type BookingRequestRecord = {
   id: string; createdAt: string; name: string; phone: string; email?: string; serviceId?: string; serviceNameSnapshot: string;
-  priceSnapshot?: string; durationSnapshot?: string; preferredDate?: string; preferredTime?: string; message?: string;
+  priceSnapshot?: string; durationSnapshot?: string; preferredDate?: string; preferredTime?: string; message?: string; discountCodeSnapshot?: string; discountAmountSnapshot?: number; finalPriceSnapshot?: string;
   clientType: "NEW" | "RETURNING"; referralSource?: string; status: BookingStatus; paymentStatus: PaymentStatus;
 };
 
@@ -76,7 +76,13 @@ export async function getBookingRequests(): Promise<BookingRequestRecord[]> {
   const snapshot = await getDocs(bookingCollection);
   return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<BookingRequestRecord, "id">) }));
 }
-export async function updateBookingStatus(id: string, status: BookingStatus) { await updateDoc(doc(db, "bookingRequests", id), { status }); }
+export async function updateBookingStatus(id: string, status: BookingStatus) {
+  await updateDoc(doc(db, "bookingRequests", id), { status });
+  if (status === "DECLINED" || status === "CANCELLED") {
+    const token = await auth.currentUser?.getIdToken();
+    if (token) await fetch("/api/admin/calendar", { method: "DELETE", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: JSON.stringify({ bookingRequestId: id }) });
+  }
+}
 export async function updatePaymentStatus(id: string, paymentStatus: PaymentStatus) { await updateDoc(doc(db, "bookingRequests", id), { paymentStatus }); }
 
 
@@ -89,6 +95,7 @@ export async function getClinicSettings(): Promise<ClinicSettings> {
     const saved = snapshot.data() as Partial<ClinicSettings>;
     return {
       openingHours: { ...defaultClinicSettings.openingHours, ...(saved.openingHours ?? {}) },
+      bookingRules: { ...defaultClinicSettings.bookingRules, ...(saved.bookingRules ?? {}) },
       announcement: { ...defaultClinicSettings.announcement, ...(saved.announcement ?? {}) },
     };
   } catch (error) {
@@ -100,3 +107,16 @@ export async function getClinicSettings(): Promise<ClinicSettings> {
 export async function saveClinicSettings(settings: ClinicSettings) {
   await setDoc(clinicSettingsRef, settings);
 }
+
+
+export type AppointmentRecord = { id:string; date:string; startTime:string; endTime:string; title:string; kind:"APPOINTMENT"|"BLOCK"; notes?:string };
+export type LoyaltyProgramRecord = { id:string; title:string; description:string; discountType:"PERCENT"|"AMOUNT"; value:number; code:string; eligibility:"ALL"|"RETURNING"; active:boolean; startDate?:string; endDate?:string };
+const appointmentsCollection=collection(db,"appointments");
+const loyaltyCollection=collection(db,"loyaltyPrograms");
+export async function getAppointments():Promise<AppointmentRecord[]>{const snap=await getDocs(appointmentsCollection);return snap.docs.map(x=>({id:x.id,...(x.data() as Omit<AppointmentRecord,"id">)}));}
+export async function saveAppointmentRecord(item:AppointmentRecord){const token=await auth.currentUser?.getIdToken();if(!token)throw new Error("Please sign in again before changing the calendar.");const response=await fetch("/api/admin/calendar",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify(item)});const result=await response.json();if(!response.ok)throw new Error(result.error||"Calendar entry could not be saved.");}
+export async function deleteAppointmentRecord(item:AppointmentRecord){const token=await auth.currentUser?.getIdToken();if(!token)throw new Error("Please sign in again before changing the calendar.");const response=await fetch("/api/admin/calendar",{method:"DELETE",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify({id:item.id})});const result=await response.json();if(!response.ok)throw new Error(result.error||"Calendar entry could not be removed.");}
+export async function getLoyaltyPrograms():Promise<LoyaltyProgramRecord[]>{const snap=await getDocs(loyaltyCollection);return snap.docs.map(x=>({id:x.id,...(x.data() as Omit<LoyaltyProgramRecord,"id">)}));}
+export async function getPublicLoyaltyPrograms():Promise<LoyaltyProgramRecord[]>{try{const snap=await getDocs(query(loyaltyCollection,where("active","==",true)));const today=new Date().toISOString().slice(0,10);return snap.docs.map(x=>({id:x.id,...(x.data() as Omit<LoyaltyProgramRecord,"id">)})).filter(x=>(!x.startDate||x.startDate<=today)&&(!x.endDate||x.endDate>=today));}catch{return [];}}
+export async function saveLoyaltyProgram(item:LoyaltyProgramRecord){await setDoc(doc(db,"loyaltyPrograms",item.id),item);}
+export async function deleteLoyaltyProgram(id:string){await deleteDoc(doc(db,"loyaltyPrograms",id));}
