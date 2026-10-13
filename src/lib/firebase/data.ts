@@ -99,7 +99,7 @@ export async function getClinicSettings(): Promise<ClinicSettings> {
     if (!snapshot.exists()) return defaultClinicSettings;
     const saved = snapshot.data() as Partial<ClinicSettings>;
     return {
-      openingHours: { ...defaultClinicSettings.openingHours, ...(saved.openingHours ?? {}), sunday: { ...defaultClinicSettings.openingHours.sunday, open: true, byAppointment: true } },
+      openingHours: { ...defaultClinicSettings.openingHours, ...(saved.openingHours ?? {}), sunday: { ...defaultClinicSettings.openingHours.sunday, ...(saved.openingHours?.sunday ?? {}), open: true, byAppointment: true } },
       bookingRules: { ...defaultClinicSettings.bookingRules, ...(saved.bookingRules ?? {}) },
       announcement: { ...defaultClinicSettings.announcement, ...(saved.announcement ?? {}) },
     };
