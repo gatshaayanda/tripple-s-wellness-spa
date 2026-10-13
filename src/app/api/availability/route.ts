@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const [reservations, appointments, requests] = await Promise.all([db.collection("slotReservations").where("date", "==", date).get(), db.collection("appointments").where("date", "==", date).get(), db.collection("bookingRequests").where("preferredDate", "==", date).get()]);
     const occupied = new Set(reservations.docs.map((item) => String(item.data().time)));
     const events = appointments.docs.map((item) => item.data()).filter((item) => item.status !== "CANCELLED");
-    const heldRequests = requests.docs.map((item) => item.data()).filter((item) => item.status !== "CANCELLED" && item.status !== "DECLINED" && typeof item.preferredTime === "string");
+    const heldRequests = requests.docs.map((item) => item.data()).filter((item) => item.status !== "CANCELLED" && item.status !== "DECLINED" && item.status !== "RESCHEDULED" && typeof item.preferredTime === "string");
     const interval = Math.max(15, Math.min(60, Number(settings.bookingRules.slotIntervalMinutes) || 15));
     const minimum = Date.now() + Math.max(0, Number(settings.bookingRules.minimumNoticeHours) || 0) * 3600000;
     const buffer = Math.max(0, Number(settings.bookingRules.bufferMinutes) || 0);

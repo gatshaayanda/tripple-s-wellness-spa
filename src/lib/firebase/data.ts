@@ -32,19 +32,16 @@ export async function getServices(): Promise<ServiceRecord[]> {
 
 export async function getPublicServices(): Promise<ServiceRecord[]> {
   try {
-    // Services are publicly readable, so distinguish an unseeded collection from an intentionally hidden catalogue.
-    const snapshot = await getDocs(servicesCollection);
-    if (snapshot.empty) return trippleSServiceSeed;
-    return snapshot.docs
-      .map((item) => ({ id: item.id, ...(item.data() as Omit<ServiceRecord, "id">) }))
-      .filter((item) => item.active);
+    const [snapshot, catalogueState] = await Promise.all([getDocs(servicesCollection), getDoc(doc(db, "settings", "catalogueState"))]);
+    if (snapshot.empty) return catalogueState.data()?.servicesManaged === true ? [] : trippleSServiceSeed;
+    return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ServiceRecord, "id">) })).filter((item) => item.active);
   } catch (error) {
     console.warn("[Tripple S] public services unavailable; using the seed catalogue", error);
     return trippleSServiceSeed;
   }
 }
-export async function saveServiceRecord(item: ServiceRecord) { await setDoc(doc(db, "services", item.id), item); }
-export async function deleteServiceRecord(id: string) { await deleteDoc(doc(db, "services", id)); }
+export async function saveServiceRecord(item: ServiceRecord) { await setDoc(doc(db, "services", item.id), item); await setDoc(doc(db, "settings", "catalogueState"), { servicesManaged: true }, { merge: true }); }
+export async function deleteServiceRecord(id: string) { await deleteDoc(doc(db, "services", id)); await setDoc(doc(db, "settings", "catalogueState"), { servicesManaged: true }, { merge: true }); }
 
 export async function getPublicProducts(): Promise<ProductRecord[]> {
   try {
