@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
+import { makeLocalDemoId, saveLocalDemoRecord } from "@/lib/tripple-s/local-demo";
 
 type EnquiryKind = "PRODUCT" | "TREATMENT" | "GENERAL";
 
@@ -14,9 +15,10 @@ export default function EnquiryModal({
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [reference, setReference] = useState("");
+  const [localOnly, setLocalOnly] = useState(false);
 
   useEffect(() => {
-    if (!open) { setBusy(false); setError(""); setSubmitted(false); setReference(""); }
+    if (!open) { setBusy(false); setError(""); setSubmitted(false); setReference(""); setLocalOnly(false); }
   }, [open]);
 
   useEffect(() => {
@@ -55,9 +57,19 @@ export default function EnquiryModal({
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Your enquiry could not be sent. Please try again.");
       setReference(String(result.reference || result.id || "").slice(0, 8).toUpperCase());
+      setLocalOnly(false);
       setSubmitted(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Your enquiry could not be sent. Please try again.");
+      try {
+        const id = makeLocalDemoId();
+        const requestType = kind === "PRODUCT" ? "PRODUCT_ENQUIRY" : kind === "TREATMENT" ? "TREATMENT_ENQUIRY" : "GENERAL_ENQUIRY";
+        saveLocalDemoRecord({ id, createdAt: new Date().toISOString(), requestType, name: String(form.get("name") ?? "").trim(), phone: String(form.get("phone") ?? "").trim(), email: String(form.get("email") ?? "").trim(), serviceNameSnapshot: itemName || (kind === "GENERAL" ? "General client enquiry" : "Client enquiry"), productId: kind === "PRODUCT" ? itemId : undefined, productNameSnapshot: kind === "PRODUCT" ? itemName : undefined, serviceId: kind === "TREATMENT" ? itemId : undefined, clientType: "NEW", status: "NEW", paymentStatus: "PAYMENT_PENDING", message: String(form.get("message") ?? "").trim(), localOnly: true });
+        setReference(id.slice(-6).toUpperCase());
+        setLocalOnly(true);
+        setSubmitted(true);
+      } catch {
+        setError(err instanceof Error ? err.message : "Your enquiry could not be sent. Please try again.");
+      }
     } finally { setBusy(false); }
   }
 
@@ -68,10 +80,10 @@ export default function EnquiryModal({
         <span className="enquirySpark" aria-hidden="true">✦</span>
         <span className="kicker">TRIPPLE S · CLIENT CARE</span>
         <h2 id="enquiry-title">{submitted ? "Your enquiry is with the team." : heading}</h2>
-        <p id="enquiry-description">{submitted ? "Thank you. Keep this reference for your records. This is an enquiry receipt, not an appointment confirmation." : intro}</p>
+        <p id="enquiry-description">{submitted ? localOnly ? "This enquiry is saved on this device only. It has not been sent to Tripple S. Please retry when online or contact the clinic directly." : "Thank you. Keep this reference for your records. This is an enquiry receipt, not an appointment confirmation." : intro}</p>
         {itemName && <div className="enquiryItem"><strong>{itemName}</strong>{itemPrice && <span>{itemPrice}</span>}</div>}
         {submitted ? (
-          <div className="enquirySuccess" role="status"><span>✓</span><strong>Enquiry received</strong>{reference && <small>Reference #{reference}</small>}<button className="button buttonPrimary" type="button" onClick={onClose}>Back to Tripple S</button></div>
+          <div className="enquirySuccess" role="status"><span>{localOnly ? "!" : "✓"}</span><strong>{localOnly ? "Saved on this device" : "Enquiry received"}</strong>{reference && <small>Reference #{reference}</small>}{localOnly && <a className="button buttonLight" href="https://wa.me/26774866703?text=Hello%20Tripple%20S%2C%20I%20sent%20an%20enquiry%20through%20your%20app%20and%20would%20like%20to%20follow%20up.">Contact the clinic on WhatsApp</a>}<button className="button buttonPrimary" type="button" onClick={onClose}>Back to Tripple S</button></div>
         ) : (
           <form className="enquiryForm" onSubmit={submit}>
             <label>Your name<input name="name" autoComplete="name" required maxLength={120} placeholder="Full name" /></label>
