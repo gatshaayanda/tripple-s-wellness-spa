@@ -102,7 +102,11 @@ export async function getClinicSettings(): Promise<ClinicSettings> {
 }
 
 export async function saveClinicSettings(settings: ClinicSettings) {
-  await setDoc(clinicSettingsRef, settings);
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) throw new Error("Please sign in again before changing clinic settings.");
+  const response = await fetch("/api/admin/clinic-settings", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: JSON.stringify(settings) });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || "Clinic settings could not be saved.");
 }
 
 
