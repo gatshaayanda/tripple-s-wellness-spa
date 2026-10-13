@@ -130,3 +130,6 @@
 
 /* Admin-managed weekly hours */
 .hoursAdminRow{display:grid;grid-template-columns:1fr 1.2fr 1.2fr 1fr 1fr;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line,#e7e2da)}.hoursAdminRow label{display:flex;align-items:center;gap:7px;font-size:.88rem}.hoursAdminRow input[type=time]{min-width:0;width:100%}.hoursAdminRow input[type=checkbox]{width:auto}@media(max-width:760px){.hoursAdminRow{grid-template-columns:1fr 1fr}.hoursAdminRow>strong{grid-column:1/-1}}
+
+
+.publicAnnouncement{display:flex;gap:12px;align-items:center;justify-content:center;padding:12px 20px;background:#f1eadf;color:#3b3328;border-bottom:1px solid #e1d4c2;font-size:.92rem;line-height:1.5}.publicAnnouncement strong{white-space:nowrap}.publicHours{display:grid;gap:7px;max-width:480px}.publicHours p{display:flex;justify-content:space-between;gap:18px;margin:0;padding:8px 0;border-bottom:1px solid var(--line,#e7e2da)}.publicHours p strong{font-weight:600}.publicHours p span{text-align:right}@media(max-width:600px){.publicAnnouncement{align-items:flex-start;flex-direction:column;gap:4px;padding:12px 18px}.publicHours p{font-size:.92rem}}
