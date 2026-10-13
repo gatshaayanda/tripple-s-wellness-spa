@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getPublicProducts, getPublicServices, type ProductRecord, type ServiceRecord } from "@/lib/firebase/data";
+import { getClinicSettings, getPublicProducts, getPublicServices, type ProductRecord, type ServiceRecord } from "@/lib/firebase/data";
+import { defaultClinicSettings, dayLabels, isAnnouncementVisible, type ClinicSettings, type DayKey } from "@/lib/tripple-s/clinic-settings";
 
 const categories = [
   { title: "IV Wellness", detail: "Clinician-guided wellness drips and personalised support.", symbol: "✦" },
@@ -21,22 +22,28 @@ function ImagePlaceholder({ imageUrl, label, className = "" }: { imageUrl?: stri
 export default function Home() {
   const [services, setServices] = useState<ServiceRecord[]>([]);
   const [products, setProducts] = useState<ProductRecord[]>([]);
+  const [clinicSettings, setClinicSettings] = useState<ClinicSettings>(defaultClinicSettings);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
-    void Promise.all([getPublicServices(), getPublicProducts()])
-      .then(([serviceItems, productItems]) => {
+    void Promise.all([getPublicServices(), getPublicProducts(), getClinicSettings()])
+      .then(([serviceItems, productItems, settings]) => {
         if (!active) return;
         setServices(serviceItems.filter((item) => item.active));
         setProducts(productItems.filter((item) => item.active));
+        setClinicSettings(settings);
       })
       .catch(() => { if (active) { setServices([]); setProducts([]); } })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);
 
+  const showAnnouncement = isAnnouncementVisible(clinicSettings);
+  const hoursText = (day: DayKey) => { const hours = clinicSettings.openingHours[day]; return !hours.open ? "Closed" : `${hours.byAppointment ? "By appointment" : "Open"} · ${hours.start}–${hours.end}`; };
+
   return <main className="site">
+    {showAnnouncement && <div className="publicAnnouncement" role="status"><strong>{clinicSettings.announcement.title || "Clinic notice"}</strong><span>{clinicSettings.announcement.message}</span></div>}
     <div className="topbar"><div className="container topbarInner"><span>Plot 943, Kaunda Road · Gaborone</span><strong>Medical Aesthetics · Skin Health · Wellness</strong><a href="tel:+26774866703">Call the clinic</a></div></div>
     <nav className="nav"><div className="container navInner"><Link href="/" className="brand" aria-label="Tripple S Wellness Spa home"><span className="brandMark">S</span><span>TRIPPLE S<span>WELLNESS SPA</span></span></Link><div className="navLinks"><a href="#treatments">Treatments & prices</a><a href="#our-care">Our approach</a><a href="#visit">Visit</a></div><Link href="/book" className="button buttonPrimary">Book a visit <span aria-hidden="true">↗</span></Link></div></nav>
 
@@ -70,8 +77,8 @@ export default function Home() {
 
     {products.length > 0 && <section className="section productSection"><div className="container"><div className="sectionHead sectionHeadRow"><div><span className="kicker">At-home skincare</span><h2>Continue your routine with care.</h2><p>Explore products listed by Tripple S. Contact the team to enquire about current availability.</p></div></div><div className="productGrid">{products.slice(0, 5).map((product) => <article className="productCard" key={product.id}><ImagePlaceholder imageUrl={product.imageUrl} label={`${product.name} product image`} className="productImage" /><span className="kicker">{product.size || "Professional skincare"}</span><h3>{product.name}</h3><p>{product.description}</p><div className="serviceMeta"><strong>{product.price}</strong><a href={`https://wa.me/26774866703?text=${encodeURIComponent(`Hello Tripple S, I would like to enquire about ${product.name} (${product.price}).`)}`} className="textLink">Enquire →</a></div></article>)}</div></div></section>}
 
-    <section id="visit" className="visit"><div className="container visitGrid"><div><span className="kicker">Visit Tripple S</span><h2>Your appointment starts with clarity.</h2><p>Plot 943, Kaunda Road, Gaborone, Botswana.</p><p>Monday – Saturday · 8:00 – 17:00<br /><strong>Closed Sunday</strong></p><small>Hours supplied for this app; confirm any holiday changes with the clinic.</small></div><div className="visitCard"><strong>What happens next</strong><ol><li>Tell us what you are interested in.</li><li>The team reviews your request.</li><li>Tripple S contacts you to confirm timing and next steps.</li></ol><Link href="/book" className="button buttonPrimary">Request an appointment</Link></div></div></section>
+    <section id="visit" className="visit"><div className="container visitGrid"><div><span className="kicker">Visit Tripple S</span><h2>Your appointment starts with clarity.</h2><p>Plot 943, Kaunda Road, Gaborone, Botswana.</p><div className="publicHours">{(Object.keys(dayLabels) as DayKey[]).map(day=><p key={day}><strong>{dayLabels[day]}</strong><span>{hoursText(day)}</span></p>)}</div><small>Hours and holiday notices are maintained by Tripple S. A request is not a confirmed appointment.</small></div><div className="visitCard"><strong>What happens next</strong><ol><li>Tell us what you are interested in.</li><li>The team reviews your request.</li><li>Tripple S contacts you to confirm timing and next steps.</li></ol><Link href="/book" className="button buttonPrimary">Request an appointment</Link></div></div></section>
 
-    <footer className="footer"><div className="container footerGrid"><div><div className="brand brandFooter"><span className="brandMark">S</span><span>TRIPPLE S<span>WELLNESS SPA</span></span></div><p>Medical aesthetics · Skin health · Wellness</p><a href={whatsapp}>Questions? Contact the clinic</a></div><div><strong>Explore</strong><Link href="/treatments">Treatments & prices</Link><Link href="/book">Book a visit</Link><a href="#our-care">Our approach</a></div><div><strong>Find us</strong><span>Plot 943, Kaunda Road</span><span>Gaborone, Botswana</span><span>Monday – Saturday · 8:00 – 17:00</span><span>Closed Sunday</span></div></div><div className="container footerBottom"><span>© 2026 Tripple S Wellness Spa</span><Link href="/admin" className="adminFooterLink" aria-label="Admin sign in">Admin</Link></div></footer>
+    <footer className="footer"><div className="container footerGrid"><div><div className="brand brandFooter"><span className="brandMark">S</span><span>TRIPPLE S<span>WELLNESS SPA</span></span></div><p>Medical aesthetics · Skin health · Wellness</p><a href={whatsapp}>Questions? Contact the clinic</a></div><div><strong>Explore</strong><Link href="/treatments">Treatments & prices</Link><Link href="/book">Book a visit</Link><a href="#our-care">Our approach</a></div><div><strong>Find us</strong><span>Plot 943, Kaunda Road</span><span>Gaborone, Botswana</span>{(Object.keys(dayLabels) as DayKey[]).map(day=><span key={day}>{dayLabels[day]} · {hoursText(day)}</span>)}</div></div><div className="container footerBottom"><span>© 2026 Tripple S Wellness Spa</span><Link href="/admin" className="adminFooterLink" aria-label="Admin sign in">Admin</Link></div></footer>
   </main>;
 }
