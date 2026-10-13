@@ -96,7 +96,7 @@ export default function TreatmentsPage() {
       <section className="confidence">
         <div className="container confidenceGrid">
           <div><span className="kicker">Not sure?</span><h2>Tell us what you want to improve.</h2><p>You do not need to diagnose yourself or choose the perfect treatment before speaking with the team.</p></div>
-          <Link href="/book?service=skin-consultation" className="button buttonLight">Book a consultation</Link>
+          <Link href="/book?service=skin-consultation" className="button buttonDark">Book a consultation</Link>
         </div>
       </section>
     </main>

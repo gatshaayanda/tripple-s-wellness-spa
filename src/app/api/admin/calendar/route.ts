@@ -7,8 +7,10 @@ const clock=(minute:number)=>String(Math.floor(minute/60)).padStart(2,"0")+":"+S
 export async function POST(request:NextRequest){
  const admin=await requireAdmin(request);if(!admin)return NextResponse.json({error:"Sign in with an authorized staff account."},{status:401});
  let body:Record<string,unknown>;try{body=await request.json() as Record<string,unknown>;}catch{return NextResponse.json({error:"Invalid calendar entry."},{status:400});}
- const item={id:String(body.id||""),date:String(body.date||""),startTime:String(body.startTime||""),endTime:String(body.endTime||""),title:String(body.title||"").trim().slice(0,120),kind:body.kind==="BLOCK"?"BLOCK":"APPOINTMENT",notes:String(body.notes||"").slice(0,500)};
+ const item={id:String(body.id||""),date:String(body.date||""),startTime:String(body.startTime||""),endTime:String(body.endTime||""),title:String(body.title||"").trim().slice(0,120),kind:body.kind==="BLOCK"?"BLOCK":body.kind==="WALK_IN"?"WALK_IN":"APPOINTMENT",notes:String(body.notes||"").slice(0,500)};
  if(!item.id||!/^\d{4}-\d{2}-\d{2}$/.test(item.date)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(item.startTime)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(item.endTime)||item.endTime<=item.startTime||!item.title)return NextResponse.json({error:"Add a label, date and valid start/end times."},{status:400});
+ if(!Number.isFinite(new Date(item.date+"T12:00:00+02:00").getTime())||new Date(item.date+"T12:00:00+02:00").toISOString().slice(0,10)!==item.date)return NextResponse.json({error:"Choose a valid calendar date."},{status:400});
+ if(item.kind==="WALK_IN"&&new Date(item.date+"T12:00:00+02:00").getUTCDay()===0)return NextResponse.json({error:"Sunday is appointment-only. Record a Sunday visit as an appointment, not a walk-in."},{status:409});
  try{
   const db=getAdminDb(),ref=db.collection("appointments").doc(item.id);
   const oldSnap=await ref.get(),old=oldSnap.exists?oldSnap.data():null;

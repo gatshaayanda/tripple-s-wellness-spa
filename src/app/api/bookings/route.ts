@@ -28,8 +28,9 @@ export async function POST(request: NextRequest) {
     const settingsSnap = await db.collection("settings").doc("clinic").get();
     const saved = settingsSnap.data() ?? {};
     const settings = { openingHours: { ...defaultClinicSettings.openingHours, ...(saved.openingHours ?? {}) }, bookingRules: { ...defaultClinicSettings.bookingRules, ...(saved.bookingRules ?? {}) } };
+    settings.openingHours.sunday = { ...defaultClinicSettings.openingHours.sunday, ...(saved.openingHours?.sunday ?? {}), open: true, byAppointment: true };
     const day = days[new Date(date + "T12:00:00+02:00").getUTCDay()];
-    if (day === "sunday") return NextResponse.json({ error: "The clinic is closed on Sundays. Choose Monday to Saturday." }, { status: 409 });
+    
     const hours = settings.openingHours[day];
     if (!hours?.open) return NextResponse.json({ error: "The clinic is not accepting requests on that day. Choose another date." }, { status: 409 });
     const today = new Date(Date.now() + 2 * 3600000).toISOString().slice(0, 10);

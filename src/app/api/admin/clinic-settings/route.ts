@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     bookingRules: { ...defaultClinicSettings.bookingRules, ...(body.bookingRules ?? {}) },
     announcement: { ...defaultClinicSettings.announcement, ...(body.announcement ?? {}) },
   };
-  settings.openingHours.sunday = { ...settings.openingHours.sunday, open: false, byAppointment: false };
+  settings.openingHours.sunday = { ...settings.openingHours.sunday, open: true, byAppointment: true };
   for (const day of days) {
     const hours = settings.openingHours[day];
     if (!hours || typeof hours.open !== "boolean" || typeof hours.byAppointment !== "boolean" ||

@@ -2,7 +2,10 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isSignedIn() { return request.auth != null; }
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
     function isAdmin() {
       return isSignedIn()
         && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
@@ -15,7 +18,7 @@ service cloud.firestore {
     }
 
     match /services/{serviceId} {
-      allow read: if true;
+      allow read: if resource.data.active == true || isAdmin();
       allow create, update, delete: if isAdmin();
     }
 
@@ -24,9 +27,10 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // Public writes go through validated server routes using the Admin SDK.
     match /bookingRequests/{requestId} {
-      allow create: if true;
       allow read, update, delete: if isAdmin();
+      allow create: if false;
     }
 
     match /clients/{clientId} {
@@ -35,6 +39,10 @@ service cloud.firestore {
 
     match /appointments/{appointmentId} {
       allow read, write: if isAdmin();
+    }
+
+    match /slotReservations/{reservationId} {
+      allow read, write: if false;
     }
 
     match /payments/{paymentId} {
@@ -49,8 +57,12 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    match /loyaltyPrograms/{programId} {
+      allow read, write: if isAdmin();
+    }
+
     match /settings/{settingId} {
-      allow read: if true;
+      allow read: if settingId in ['clinic', 'catalogueState'] || isAdmin();
       allow create, update, delete: if isAdmin();
     }
 
