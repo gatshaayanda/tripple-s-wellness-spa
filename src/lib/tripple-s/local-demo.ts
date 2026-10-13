@@ -91,3 +91,47 @@ export function deleteLocalDemoBucketRecord(bucket: string, id: string): void {
   const records = getLocalDemoBucket(bucket).filter(item => item.id !== id);
   window.localStorage.setItem("tripple-s-local-demo-bucket-" + bucket, JSON.stringify(records));
 }
+
+export function seedLocalDemoData(): void {
+  if (typeof window === "undefined" || window.localStorage.getItem("tripple-s-local-demo-seeded-v1") === "true") return;
+  const date = new Date(Date.now() + 2 * 3600000 + 86400000).toISOString().slice(0, 10);
+  saveLocalDemoRecord({
+    id: "demo-appointment-request",
+    createdAt: new Date().toISOString(),
+    requestType: "APPOINTMENT",
+    name: "Demo client — appointment",
+    phone: "DEMO ONLY",
+    serviceId: "skin-consultation",
+    serviceNameSnapshot: "Skin Consultation",
+    priceSnapshot: "P400",
+    durationSnapshot: "30 min",
+    preferredDate: date,
+    preferredTime: "09:00",
+    clientType: "NEW",
+    status: "NEW",
+    paymentStatus: "PAYMENT_PENDING",
+    message: "Sample request for testing the admin workflow.",
+    localOnly: true,
+  });
+  saveLocalDemoRecord({
+    id: "demo-product-enquiry",
+    createdAt: new Date().toISOString(),
+    requestType: "PRODUCT_ENQUIRY",
+    name: "Demo client — product enquiry",
+    phone: "DEMO ONLY",
+    productId: "vitamin-c-serum",
+    productNameSnapshot: "Vitamin C Serum",
+    serviceNameSnapshot: "Product enquiry: Vitamin C Serum",
+    clientType: "NEW",
+    status: "NEW",
+    paymentStatus: "PAYMENT_PENDING",
+    message: "Sample enquiry for testing the admin workflow.",
+    localOnly: true,
+  });
+  for (const item of [
+    { id: "demo-appointment", date, startTime: "10:00", endTime: "11:00", title: "Demo appointment", kind: "APPOINTMENT", notes: "Sample calendar entry" },
+    { id: "demo-break", date, startTime: "12:00", endTime: "12:30", title: "Demo break", kind: "BLOCK", notes: "Sample blocked time" },
+    { id: "demo-walk-in", date, startTime: "13:00", endTime: "13:30", title: "Demo walk-in", kind: "WALK_IN", notes: "Sample walk-in occupancy" },
+  ]) saveLocalDemoBucketRecord("calendar", item);
+  window.localStorage.setItem("tripple-s-local-demo-seeded-v1", "true");
+}
