@@ -425,3 +425,11 @@ Use The Plug's evidence vocabulary: **PASS / FAIL / NOT RUN / BLOCKED**. A code 
 - The availability endpoint depends on server-side Firebase Admin access to settings, appointments, booking requests and slot reservations. Never fabricate slots when that source fails. Verify the deployed `FIREBASE_ADMIN_KEY` and runtime logs if availability still returns 503; do not weaken Firestore read rules to work around the failure.
 - Treatment duration remains owner-editable in Services; slot generation uses the published duration, clinic hours, notice/window, buffer and reserved/overlapping appointments. Booking submission rechecks the slot transactionally. Cancelled, declined or rescheduled requests release their reservations.
 - Experience direction: calm editorial visual language, clear next steps, accessible enquiry modal, reduced-motion support, and minimal data collection. Do not add diagnostic claims or request sensitive medical details in enquiry forms.
+
+
+### Product owner QA follow-up — live slot feedback (2026-10-13)
+
+- Booking date copy must describe configured operating hours, not imply that a slot is available before the live calendar confirms it.
+- If the availability API fails, do not fabricate or display times. Clearly state that availability could not be verified and that no appointment was booked; offer an in-place retry.
+- Display the server's appointment-only note where provided. Slot options remain suggestions until the booking API transactionally reserves them, and the customer still receives a request rather than instant confirmation.
+- If `/api/availability` returns 503 persistently, inspect the deployed Vercel function's `[Tripple S] availability lookup failed` runtime log and verify `FIREBASE_ADMIN_KEY` and Firestore access. This project integration could not currently retrieve those Vercel runtime logs; do not assume the root cause or weaken Firestore rules as a workaround.
