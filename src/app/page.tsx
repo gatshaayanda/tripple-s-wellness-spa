@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import EnquiryModal from "@/components/enquiry-modal";
 import { getClinicSettings, getPublicLoyaltyPrograms, getPublicProducts, getPublicServices, type LoyaltyProgramRecord, type ProductRecord, type ServiceRecord } from "@/lib/firebase/data";
 import { defaultClinicSettings, isAnnouncementVisible, type ClinicSettings, type DayKey } from "@/lib/tripple-s/clinic-settings";
-
-const whatsapp = "https://wa.me/26774866703?text=Hello%20Tripple%20S%2C%20I%27d%20like%20to%20enquire.";
 
 function ImagePlaceholder({ imageUrl, label, className = "" }: { imageUrl?: string; label: string; className?: string }) {
   return <div className={`imagePlaceholder ${className}`} role="img" aria-label={label} style={imageUrl ? { backgroundImage: `linear-gradient(180deg, transparent 35%, rgba(23,22,20,.34)), url("${imageUrl}")` } : undefined}>
@@ -20,6 +19,7 @@ export default function Home() {
   const [loyaltyPrograms, setLoyaltyPrograms] = useState<LoyaltyProgramRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [enquiry, setEnquiry] = useState<{ kind: "PRODUCT" | "GENERAL"; id?: string; name?: string; price?: string } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -93,10 +93,11 @@ export default function Home() {
 
 {loyaltyPrograms.length>0&&<section className="section offersSection"><div className="container"><div className="sectionHead"><span className="kicker">Current offers</span><h2>Published by Tripple S</h2></div><div className="offerGrid">{loyaltyPrograms.map(program=><article className="offerCard" key={program.id}><span className="kicker">Tripple S offer</span><h3>{program.title}</h3><p>{program.description}</p><strong>{program.discountType==="PERCENT"?program.value+"% off":"P"+program.value+" off"}</strong><small>{program.eligibility==="RETURNING"?"For returning clients":"Use code: "+program.code}</small></article>)}</div></div></section>}
 
-    {products.length > 0 && <section className="section productSection"><div className="container"><div className="sectionHead sectionHeadRow"><div><span className="kicker">At-home skincare</span><h2>Continue your routine with care.</h2><p>Explore products listed by Tripple S. Contact the team to enquire about current availability.</p></div></div><div className="productGrid">{products.slice(0, 5).map((product) => <article className="productCard" key={product.id}><ImagePlaceholder imageUrl={product.imageUrl} label={`${product.name} product image`} className="productImage" /><span className="kicker">{product.size || "Professional skincare"}</span><h3>{product.name}</h3><p>{product.description}</p><div className="serviceMeta"><strong>{product.price}</strong><a href={`https://wa.me/26774866703?text=${encodeURIComponent(`Hello Tripple S, I would like to enquire about ${product.name} (${product.price}).`)}`} className="textLink">Enquire →</a></div></article>)}</div></div></section>}
+    {products.length > 0 && <section className="section productSection"><div className="container"><div className="sectionHead sectionHeadRow"><div><span className="kicker">At-home skincare</span><h2>Continue your routine with care.</h2><p>Explore products listed by Tripple S. Contact the team to enquire about current availability.</p></div></div><div className="productGrid">{products.slice(0, 5).map((product) => <article className="productCard" key={product.id}><ImagePlaceholder imageUrl={product.imageUrl} label={`${product.name} product image`} className="productImage" /><span className="kicker">{product.size || "Professional skincare"}</span><h3>{product.name}</h3><p>{product.description}</p><div className="serviceMeta"><strong>{product.price}</strong><button type="button" className="textLink productEnquireButton" onClick={() => setEnquiry({ kind: "PRODUCT", id: product.id, name: product.name, price: product.price })}>Enquire in app →</button></div></article>)}</div></div></section>}
 
     <section id="visit" className="visit"><div className="container visitGrid"><div><span className="kicker">Visit Tripple S</span><h2>Your appointment starts with clarity.</h2><p>Plot 943, Kaunda Road, Gaborone, Botswana.</p><p className="visitHoursSummary">{compactHoursSummary}</p><small>Temporary changes are posted here by the clinic.</small></div><div className="visitCard"><strong>Choose a time that works.</strong><p>Pick an available slot online. The Tripple S team will confirm your appointment with you.</p><Link href="/book" className="button buttonPrimary">Book a visit</Link></div></div></section>
 
-    <footer className="footer"><div className="container footerGrid"><div><div className="brand brandFooter"><span className="brandMark">S</span><span>TRIPPLE S<span>WELLNESS SPA</span></span></div><p>Medical aesthetics · Skin health · Wellness</p><a href={whatsapp}>Questions? Contact the clinic</a></div><div><strong>Explore</strong><Link href="/treatments">Treatments & prices</Link><Link href="/book">Book a visit</Link><a href="#our-care">Our approach</a></div><div><strong>Find us</strong><span>Plot 943, Kaunda Road</span><span>Gaborone, Botswana</span><span>Appointments by request</span></div></div><div className="container footerBottom"><span>© 2026 Tripple S Wellness Spa</span><Link href="/admin" className="adminFooterLink" aria-label="Admin sign in">Admin</Link></div></footer>
+    <footer className="footer"><div className="container footerGrid"><div><div className="brand brandFooter"><span className="brandMark">S</span><span>TRIPPLE S<span>WELLNESS SPA</span></span></div><p>Medical aesthetics · Skin health · Wellness</p><button type="button" className="footerEnquiryLink" onClick={() => setEnquiry({ kind: "GENERAL" })}>Questions? Send an enquiry</button></div><div><strong>Explore</strong><Link href="/treatments">Treatments & prices</Link><Link href="/book">Book a visit</Link><a href="#our-care">Our approach</a></div><div><strong>Find us</strong><span>Plot 943, Kaunda Road</span><span>Gaborone, Botswana</span><span>Appointments by request</span></div></div><div className="container footerBottom"><span>© 2026 Tripple S Wellness Spa</span><Link href="/admin" className="adminFooterLink" aria-label="Admin sign in">Admin</Link></div></footer>
+    <EnquiryModal open={!!enquiry} onClose={() => setEnquiry(null)} kind={enquiry?.kind ?? "GENERAL"} itemId={enquiry?.id} itemName={enquiry?.name} itemPrice={enquiry?.price} />
   </main>;
 }

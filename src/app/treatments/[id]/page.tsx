@@ -3,15 +3,15 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import EnquiryModal from "@/components/enquiry-modal";
 import { getPublicServices, type ServiceRecord } from "@/lib/firebase/data";
-
-const whatsapp = "https://wa.me/26774866703?text=Hello%20Tripple%20S%2C%20I%27d%20like%20to%20ask%20about%20a%20treatment.";
 
 export default function TreatmentDetailPage() {
   const params = useParams<{ id: string }>();
   const id = decodeURIComponent(params.id ?? "");
   const [service, setService] = useState<ServiceRecord | null>(null);
   const [loading, setLoading] = useState(true);
+  const [enquiryOpen, setEnquiryOpen] = useState(false);
 
   useEffect(() => {
     void getPublicServices()
@@ -28,7 +28,7 @@ export default function TreatmentDetailPage() {
     return (
       <main className="bookPage">
         <nav className="nav"><div className="container navInner"><Link href="/" className="brand"><span className="brandMark">S</span><span>TRIPPLE S<span>WELLNESS SPA</span></span></Link><Link href="/treatments" className="button buttonLight">All treatments</Link></div></nav>
-        <div className="formWrap"><div className="formCard emptyPublic"><h1>Treatment not found</h1><p>This treatment may no longer be published. You can browse the current catalogue or contact Tripple S directly.</p><div className="actions"><Link href="/treatments" className="button buttonPrimary">View treatments</Link><a href={whatsapp} className="button buttonLight">WhatsApp Tripple S</a></div></div></div>
+        <div className="formWrap"><div className="formCard emptyPublic"><h1>Treatment not found</h1><p>This treatment may no longer be published. You can browse the current catalogue or contact Tripple S directly.</p><div className="actions"><Link href="/treatments" className="button buttonPrimary">View treatments</Link></div></div></div>
       </main>
     );
   }
@@ -55,7 +55,7 @@ export default function TreatmentDetailPage() {
               {service.assessmentNote && <p className="assessmentCopy">{service.assessmentNote}</p>}
               <div className="actions">
                 <Link href={`/book?service=${encodeURIComponent(service.id)}`} className="button buttonPrimary">Request this appointment</Link>
-                <a href={whatsapp} className="button buttonLight">Ask Tripple S on WhatsApp</a>
+                <button type="button" className="button buttonLight" onClick={() => setEnquiryOpen(true)}>Ask about this treatment</button>
               </div>
             </div>
             <aside className="detailAside">
@@ -77,6 +77,7 @@ export default function TreatmentDetailPage() {
       </section>
 
       <section className="confidence"><div className="container confidenceGrid"><div><span className="kicker">Need help choosing?</span><h2>Start with a consultation.</h2><p>Tell the team what you would like to improve. You do not need to diagnose yourself.</p></div><Link href="/book?service=skin-consultation" className="button buttonLight">Book a consultation</Link></div></section>
+      <EnquiryModal open={enquiryOpen} onClose={() => setEnquiryOpen(false)} kind="TREATMENT" itemId={service.id} itemName={service.name} itemPrice={service.price} />
     </main>
   );
 }
