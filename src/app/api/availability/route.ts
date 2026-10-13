@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const saved = settingsSnap.data() ?? {};
     const settings = { openingHours: { ...defaultClinicSettings.openingHours, ...(saved.openingHours ?? {}) }, bookingRules: { ...defaultClinicSettings.bookingRules, ...(saved.bookingRules ?? {}) } };
     const dayKey = localDay(date);
-    const day = dayKey === "sunday" ? { ...settings.openingHours.sunday, open: false, byAppointment: false } : settings.openingHours[dayKey];
+    const day = settings.openingHours[dayKey];
     if (!day?.open) return NextResponse.json({ slots: [], note: "The clinic is not accepting requests on this day." });
     const today = new Date(Date.now() + 2 * 3600000).toISOString().slice(0, 10);
     const distance = Math.round((new Date(date + "T00:00:00+02:00").getTime() - new Date(today + "T00:00:00+02:00").getTime()) / 86400000);
