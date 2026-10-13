@@ -21,7 +21,8 @@ export async function POST(request: NextRequest) {
   const serviceId = String(body.serviceId ?? "").trim();
   const message = String(body.message ?? "").trim().slice(0, 1500);
   const code = String(body.discountCode ?? "").trim().toUpperCase();
-  if (!name || !phone || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return NextResponse.json({ error: "Enter your name and mobile number, then choose a date and available time." }, { status: 400 });
+  const parsedDate = new Date(date + "T12:00:00+02:00");
+  if (!name || !phone || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== date || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return NextResponse.json({ error: "Enter your name and mobile number, then choose a valid date and available time." }, { status: 400 });
   try {
     const db = getAdminDb();
     const settingsSnap = await db.collection("settings").doc("clinic").get();
