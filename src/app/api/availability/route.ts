@@ -9,7 +9,8 @@ function localDay(date: string) { return days[new Date(date + "T12:00:00+02:00")
 export async function GET(request: NextRequest) {
   const date = request.nextUrl.searchParams.get("date") ?? "";
   const duration = Math.max(15, Math.min(240, Number(request.nextUrl.searchParams.get("duration") ?? 30) || 30));
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return NextResponse.json({ error: "Choose a valid appointment date." }, { status: 400 });
+  const parsedDate = new Date(date + "T12:00:00+02:00");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== date) return NextResponse.json({ error: "Choose a valid appointment date." }, { status: 400 });
   try {
     const db = getAdminDb();
     const settingsSnap = await db.collection("settings").doc("clinic").get();
