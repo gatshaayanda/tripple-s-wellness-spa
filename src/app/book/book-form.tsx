@@ -76,8 +76,13 @@ export default function BookForm() {
     const calendarEntries = getLocalDemoBucket<{ id: string; date: string; startTime: string; endTime: string; kind: string }>("calendar").filter(item => item.date === preferredDate);
     const interval = Math.max(15, Number(clinicSettings.bookingRules.slotIntervalMinutes) || 15);
     const duration = Math.max(15, Number(selectedDuration) || 30);
+    const today = new Date(Date.now() + 2 * 3600000).toISOString().slice(0, 10);
+    const distance = Math.round((new Date(preferredDate + "T00:00:00+02:00").getTime() - new Date(today + "T00:00:00+02:00").getTime()) / 86400000);
     const slots: string[] = [];
+    if (distance < 0 || distance > clinicSettings.bookingRules.advanceBookingDays) { setAvailableSlots([]); setSelectedTime(""); setAvailabilityError(""); setAvailabilityNote("Choose a date within the configured booking window."); setLocalDemoMode(true); return; }
     for (let start = toMinutes(hours.start); start + duration <= toMinutes(hours.end); start += interval) {
+      const slotInstant = new Date(preferredDate + "T" + toClock(start) + ":00+02:00").getTime();
+      if (slotInstant < Date.now() + Math.max(0, Number(clinicSettings.bookingRules.minimumNoticeHours) || 0) * 3600000) continue;
       const requestOverlap = occupied.some(item => { const existingStart = toMinutes(String(item.preferredTime)); const existingDuration = Math.max(15, Number(String(item.durationSnapshot || "30").match(/\d+/)?.[0] || 30)); return start < existingStart + existingDuration && start + duration > existingStart; });
       const calendarOverlap = calendarEntries.some(item => start < toMinutes(item.endTime) && start + duration > toMinutes(item.startTime));
       if (!requestOverlap && !calendarOverlap) slots.push(toClock(start));
