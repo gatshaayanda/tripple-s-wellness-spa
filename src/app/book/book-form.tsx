@@ -124,6 +124,11 @@ export default function BookForm() {
     }
 
     try {
+      if (localDemoMode) {
+        const id = makeLocalDemoId();
+        saveLocalDemoRecord({ id, createdAt: new Date().toISOString(), requestType: "APPOINTMENT", name: request.name, phone: request.phone, ...(request.email ? { email: request.email } : {}), ...(request.serviceId ? { serviceId: request.serviceId } : {}), serviceNameSnapshot: request.serviceNameSnapshot, ...(request.priceSnapshot ? { priceSnapshot: request.priceSnapshot } : {}), ...(request.durationSnapshot ? { durationSnapshot: request.durationSnapshot } : {}), preferredDate: requestedDate, preferredTime, clientType, status: "NEW", paymentStatus: "PAYMENT_PENDING", ...(message ? { message } : {}), localOnly: true });
+        setReference(id.slice(-6).toUpperCase()); setLocalDemoSubmission(true); setSubmitted(true); formElement.reset(); return;
+      }
       const response = await fetch("/api/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...request, time: selectedTime, discountCode }) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "The appointment request could not be saved.");
