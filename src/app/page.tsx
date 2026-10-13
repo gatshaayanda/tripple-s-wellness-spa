@@ -38,7 +38,27 @@ export default function Home() {
 
   const showAnnouncement = isAnnouncementVisible(clinicSettings);
   const matchingServices = services.filter((service) => !searchQuery.trim() || (service.name + " " + service.category + " " + service.description).toLowerCase().includes(searchQuery.trim().toLowerCase())).slice(0, 5);
-  const hoursText = (day: DayKey) => { const hours = clinicSettings.openingHours[day]; return !hours.open ? "Closed" : `${hours.byAppointment ? "By appointment" : "Open"} · ${hours.start}–${hours.end}`; };
+  const compactHoursSummary = (() => {
+    const order: DayKey[] = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+    const groups: { signature: string; days: DayKey[]; text: string }[] = [];
+    for (const day of order) {
+      const hours = clinicSettings.openingHours[day];
+      const signature = !hours.open ? "closed" : [hours.byAppointment ? "appointment" : "open", hours.start, hours.end].join("|");
+      const text = !hours.open ? "Closed" : (hours.byAppointment ? "by appointment" : "open") + " · " + hours.start + "–" + hours.end;
+      const existing = groups.find((group) => group.signature === signature);
+      if (existing) existing.days.push(day);
+      else groups.push({ signature, days: [day], text });
+    }
+    const short: Record<DayKey, string> = { monday: "Mon", tuesday: "Tue", wednesday: "Wed", thursday: "Thu", friday: "Fri", saturday: "Sat", sunday: "Sun" };
+    return groups.map((group) => {
+      const indexes = group.days.map((day) => order.indexOf(day));
+      const consecutive = indexes.every((value, index) => index === 0 || value === indexes[index - 1] + 1);
+      const dayText = group.days.length > 1 && consecutive
+        ? short[group.days[0]] + "–" + short[group.days[group.days.length - 1]]
+        : group.days.map((day) => short[day]).join(", ");
+      return dayText + " · " + group.text;
+    }).join("  |  ");
+  })();
 
   return <main className="site">
     {showAnnouncement && <div className="publicAnnouncement" role="status"><strong>{clinicSettings.announcement.title || "Clinic notice"}</strong><span>{clinicSettings.announcement.message}</span></div>}
@@ -68,14 +88,14 @@ export default function Home() {
 
     <section id="treatments" className="section"><div className="container"><div className="sectionHead sectionHeadRow"><div><span className="kicker">Treatments & pricing</span><h2>{searchQuery.trim() ? "Matching treatments" : "Popular starting points"}</h2><p>Published prices in Botswana Pula. Suitability is confirmed by the clinical team.</p></div><Link href="/treatments" className="textLink">Full menu →</Link></div>
       {loading ? <div className="loadingCard">Opening the Tripple S menu…</div> : services.length === 0 ? <div className="emptyPublic"><h3>The menu is temporarily unavailable.</h3><p>You can still request a consultation and the team can guide you.</p><Link href="/book?service=skin-consultation" className="button buttonPrimary">Start with a consultation</Link></div> : <div className="serviceGrid homeServiceGrid">{(searchQuery.trim() ? matchingServices : services.slice(0, 6)).map((service) => <article className="serviceCard homeServiceCard" key={service.id}><ImagePlaceholder imageUrl={service.imageUrl} label={`${service.name} photography`} className="serviceImage" /><span>{service.category}</span><h3>{service.name}</h3><p>{service.description}</p><div className="serviceMeta"><strong>{service.price}</strong><small>{service.duration}</small></div><Link href={`/book?service=${encodeURIComponent(service.id)}`} className="button buttonDark">Request this treatment</Link></article>)}</div>}
-      <div className="catalogNote"><span>✦</span><p>Not sure which treatment is right for you? Start with a consultation. Suitability is determined by the Tripple S clinical team.</p><Link href="/book?service=skin-consultation" className="textLink">Ask for guidance →</Link></div>
+      
     </div></section>
 
 {loyaltyPrograms.length>0&&<section className="section offersSection"><div className="container"><div className="sectionHead"><span className="kicker">Current offers</span><h2>Published by Tripple S</h2></div><div className="offerGrid">{loyaltyPrograms.map(program=><article className="offerCard" key={program.id}><span className="kicker">Tripple S offer</span><h3>{program.title}</h3><p>{program.description}</p><strong>{program.discountType==="PERCENT"?program.value+"% off":"P"+program.value+" off"}</strong><small>{program.eligibility==="RETURNING"?"For returning clients":"Use code: "+program.code}</small></article>)}</div></div></section>}
 
     {products.length > 0 && <section className="section productSection"><div className="container"><div className="sectionHead sectionHeadRow"><div><span className="kicker">At-home skincare</span><h2>Continue your routine with care.</h2><p>Explore products listed by Tripple S. Contact the team to enquire about current availability.</p></div></div><div className="productGrid">{products.slice(0, 5).map((product) => <article className="productCard" key={product.id}><ImagePlaceholder imageUrl={product.imageUrl} label={`${product.name} product image`} className="productImage" /><span className="kicker">{product.size || "Professional skincare"}</span><h3>{product.name}</h3><p>{product.description}</p><div className="serviceMeta"><strong>{product.price}</strong><a href={`https://wa.me/26774866703?text=${encodeURIComponent(`Hello Tripple S, I would like to enquire about ${product.name} (${product.price}).`)}`} className="textLink">Enquire →</a></div></article>)}</div></div></section>}
 
-    <section id="visit" className="visit"><div className="container visitGrid"><div><span className="kicker">Visit Tripple S</span><h2>Your appointment starts with clarity.</h2><p>Plot 943, Kaunda Road, Gaborone, Botswana.</p><p className="visitHoursSummary">{(Object.keys(dayLabels) as DayKey[]).map(day=>dayLabels[day].slice(0,3)+" "+hoursText(day)).join(" · ")}</p><small>Live hours and holiday notices are maintained by Tripple S.</small></div><div className="visitCard"><strong>What happens next</strong><ol><li>Tell us what you are interested in.</li><li>The team reviews your request.</li><li>Tripple S contacts you to confirm timing and next steps.</li></ol><Link href="/book" className="button buttonPrimary">Request an appointment</Link></div></div></section>
+    <section id="visit" className="visit"><div className="container visitGrid"><div><span className="kicker">Visit Tripple S</span><h2>Your appointment starts with clarity.</h2><p>Plot 943, Kaunda Road, Gaborone, Botswana.</p><p className="visitHoursSummary">{compactHoursSummary}</p><small>Temporary changes are posted here by the clinic.</small></div><div className="visitCard"><strong>Choose a time that works.</strong><p>Pick an available slot online. The Tripple S team will confirm your appointment with you.</p><Link href="/book" className="button buttonPrimary">Book a visit</Link></div></div></section>
 
     <footer className="footer"><div className="container footerGrid"><div><div className="brand brandFooter"><span className="brandMark">S</span><span>TRIPPLE S<span>WELLNESS SPA</span></span></div><p>Medical aesthetics · Skin health · Wellness</p><a href={whatsapp}>Questions? Contact the clinic</a></div><div><strong>Explore</strong><Link href="/treatments">Treatments & prices</Link><Link href="/book">Book a visit</Link><a href="#our-care">Our approach</a></div><div><strong>Find us</strong><span>Plot 943, Kaunda Road</span><span>Gaborone, Botswana</span><span>Appointments by request</span></div></div><div className="container footerBottom"><span>© 2026 Tripple S Wellness Spa</span><Link href="/admin" className="adminFooterLink" aria-label="Admin sign in">Admin</Link></div></footer>
   </main>;
