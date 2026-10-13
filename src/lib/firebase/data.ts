@@ -27,7 +27,7 @@ const productsCollection = collection(db, "products");
 const bookingCollection = collection(db, "bookingRequests");
 
 export async function getServices(): Promise<ServiceRecord[]> {
-  if (isLocalDemoMode()) { const saved = getLocalDemoBucket<{ id: string; record: ServiceRecord }>("services").map(item => item.record); return saved.length ? saved : trippleSServiceSeed; }
+  if (isLocalDemoMode()) { let saved = getLocalDemoBucket<{ id: string; record: ServiceRecord }>("services"); const settings = getLocalDemoBucket<{ id: string; value?: unknown }>("settings"); if (!settings.some(item => item.id === "servicesInitialized")) { for (const item of trippleSServiceSeed) saveLocalDemoBucketRecord("services", { id: item.id, record: item }); saveLocalDemoBucketRecord("settings", { id: "servicesInitialized", value: true }); saved = getLocalDemoBucket<{ id: string; record: ServiceRecord }>("services"); } return saved.map(item => item.record); }
   const snapshot = await getDocs(servicesCollection);
   return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ServiceRecord, "id">) }));
 }
@@ -63,7 +63,7 @@ export async function getPublicProducts(): Promise<ProductRecord[]> {
 }
 
 export async function getProducts(): Promise<ProductRecord[]> {
-  if (isLocalDemoMode()) { const saved = getLocalDemoBucket<{ id: string; record: ProductRecord }>("products").map(item => item.record); return saved.length ? saved : trippleSProductSeed; }
+  if (isLocalDemoMode()) { let saved = getLocalDemoBucket<{ id: string; record: ProductRecord }>("products"); const settings = getLocalDemoBucket<{ id: string; value?: unknown }>("settings"); if (!settings.some(item => item.id === "productsInitialized")) { for (const item of trippleSProductSeed) saveLocalDemoBucketRecord("products", { id: item.id, record: item }); saveLocalDemoBucketRecord("settings", { id: "productsInitialized", value: true }); saved = getLocalDemoBucket<{ id: string; record: ProductRecord }>("products"); } return saved.map(item => item.record); }
   const snapshot = await getDocs(productsCollection);
   return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ProductRecord, "id">) }));
 }
