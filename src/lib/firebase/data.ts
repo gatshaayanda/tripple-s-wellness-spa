@@ -77,11 +77,11 @@ export async function getBookingRequests(): Promise<BookingRequestRecord[]> {
   return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<BookingRequestRecord, "id">) }));
 }
 export async function updateBookingStatus(id: string, status: BookingStatus) {
-  await updateDoc(doc(db, "bookingRequests", id), { status });
-  if (status === "DECLINED" || status === "CANCELLED") {
-    const token = await auth.currentUser?.getIdToken();
-    if (token) { const response = await fetch("/api/admin/calendar", { method: "DELETE", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: JSON.stringify({ bookingRequestId: id }) }); if (!response.ok) throw new Error("Status changed, but the slot could not be released. Please retry the release from the calendar."); }
-  }
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) throw new Error("Please sign in again before changing a request.");
+  const response = await fetch("/api/admin/booking-status", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: JSON.stringify({ id, status }) });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || "Request status could not be updated.");
 }
 export async function updatePaymentStatus(id: string, paymentStatus: PaymentStatus) { await updateDoc(doc(db, "bookingRequests", id), { paymentStatus }); }
 

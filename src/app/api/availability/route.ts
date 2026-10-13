@@ -20,9 +20,10 @@ export async function GET(request: NextRequest) {
     const today = new Date(Date.now() + 2 * 3600000).toISOString().slice(0, 10);
     const distance = Math.round((new Date(date + "T00:00:00+02:00").getTime() - new Date(today + "T00:00:00+02:00").getTime()) / 86400000);
     if (distance < 0 || distance > settings.bookingRules.advanceBookingDays) return NextResponse.json({ slots: [], note: "Choose a date within the booking window." });
-    const [reservations, appointments] = await Promise.all([db.collection("slotReservations").where("date", "==", date).get(), db.collection("appointments").where("date", "==", date).get()]);
+    const [reservations, appointments, requests] = await Promise.all([db.collection("slotReservations").where("date", "==", date).get(), db.collection("appointments").where("date", "==", date).get(), db.collection("bookingRequests").where("preferredDate", "==", date).get()]);
     const occupied = new Set(reservations.docs.map((item) => String(item.data().time)));
     const events = appointments.docs.map((item) => item.data()).filter((item) => item.status !== "CANCELLED");
+    const heldRequests = requests.docs.map((item) => item.data()).filter((item) => item.status !== "CANCELLED" && item.status !== "DECLINED" && typeof item.preferredTime === "string");
     const interval = Math.max(15, Math.min(60, Number(settings.bookingRules.slotIntervalMinutes) || 15));
     const minimum = Date.now() + Math.max(0, Number(settings.bookingRules.minimumNoticeHours) || 0) * 3600000;
     const buffer = Math.max(0, Number(settings.bookingRules.bufferMinutes) || 0);
@@ -35,6 +36,7 @@ export async function GET(request: NextRequest) {
       let blocked = false;
       for (let minute = start; minute < busyEnd; minute += 15) if (occupied.has(clock(minute))) blocked = true;
       for (const event of events) if (typeof event.startTime === "string" && typeof event.endTime === "string" && start < minutes(event.endTime) && busyEnd > minutes(event.startTime)) blocked = true;
+      for (const held of heldRequests) { const heldStart=minutes(String(held.preferredTime)); const heldDuration=Number(String(held.durationSnapshot||"30").match(/\\d+/)?.[0]||30); if(start<heldStart+heldDuration&&busyEnd>heldStart)blocked=true; }
       if (!blocked) slots.push(time);
     }
     return NextResponse.json({ slots, note: day.byAppointment ? "Appointment-only hours; the clinic will confirm your request." : "" });

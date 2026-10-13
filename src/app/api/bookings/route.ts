@@ -42,8 +42,10 @@ export async function POST(request: NextRequest) {
     const end = mins(time) + duration;
     const interval = Math.max(15, Number(settings.bookingRules.slotIntervalMinutes) || 15);
     if (mins(time) < mins(hours.start) || end + Number(settings.bookingRules.bufferMinutes || 0) > mins(hours.end) || (mins(time) - mins(hours.start)) % interval !== 0) return NextResponse.json({ error: "Choose one of the available times within clinic hours." }, { status: 409 });
-    const appointmentSnap = await db.collection("appointments").where("date", "==", date).get();
-    if (appointmentSnap.docs.some((item) => { const event=item.data(); return event.status!=="CANCELLED" && typeof event.startTime==="string" && typeof event.endTime==="string" && mins(time)<mins(event.endTime) && end+Number(settings.bookingRules.bufferMinutes||0)>mins(event.startTime); })) return NextResponse.json({ error: "That time has just become unavailable. Please choose another slot." }, { status: 409 });
+    const [appointmentSnap,requestSnap] = await Promise.all([db.collection("appointments").where("date", "==", date).get(),db.collection("bookingRequests").where("preferredDate","==",date).get()]);
+    const appointmentConflict=appointmentSnap.docs.some((item) => { const event=item.data(); return event.status!=="CANCELLED" && typeof event.startTime==="string" && typeof event.endTime==="string" && mins(time)<mins(event.endTime) && end+Number(settings.bookingRules.bufferMinutes||0)>mins(event.startTime); });
+    const requestConflict=requestSnap.docs.some(item=>{const event=item.data();if(event.status==="DECLINED"||event.status==="CANCELLED"||typeof event.preferredTime!=="string")return false;const start=mins(event.preferredTime);const duration=durationOf(String(event.durationSnapshot||"30 min"));return mins(time)<start+duration&&end+Number(settings.bookingRules.bufferMinutes||0)>start;});
+    if (appointmentConflict||requestConflict) return NextResponse.json({ error: "That time has just become unavailable. Please choose another slot." }, { status: 409 });
     let discount: Record<string, unknown> | null = null;
     if (code) {
       const programs = await db.collection("loyaltyPrograms").where("active", "==", true).get();
