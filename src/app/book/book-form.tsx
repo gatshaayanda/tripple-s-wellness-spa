@@ -49,17 +49,10 @@ export default function BookForm() {
       setBusy(false);
       return;
     }
-    if (requestedDate && new Date(`${requestedDate}T12:00:00`).getDay() === 0) {
-      setError("Tripple S is closed on Sundays. Please choose another day or leave the date open for the team to discuss.");
-      setBusy(false);
-      return;
-    }
-
     const service = services.find((item) => item.id === String(form.get("serviceId") ?? ""));
     const email = String(form.get("email") ?? "").trim();
     const preferredTime = String(form.get("time") ?? "").trim();
     const message = String(form.get("message") ?? "").trim();
-    const referralSource = String(form.get("referralSource") ?? "").trim();
     const request = {
       createdAt: new Date().toISOString(),
       name: String(form.get("name") ?? "").trim(),
@@ -73,7 +66,6 @@ export default function BookForm() {
       ...(requestedDate ? { preferredDate: requestedDate } : {}),
       ...(preferredTime ? { preferredTime } : {}),
       ...(message ? { message } : {}),
-      ...(referralSource ? { referralSource } : {}),
     };
 
     if (!request.name || !request.phone) {
@@ -115,13 +107,13 @@ export default function BookForm() {
             {selected && <div className="selectedTreatment"><div><span className="kicker">Your selection</span><strong>{selected.name}</strong><p>{selected.description}</p></div><div className="selectedTreatmentPrice"><strong>{selected.price}</strong><span>{selected.duration}</span></div>{selected.consultationRequired && <p className="selectedTreatmentNote">Clinical assessment may be required. Suitability is determined by the Tripple S clinical team.</p>}</div>}
           </section>
           <section className="bookingFormSection"><div className="bookingSectionHeading"><span>03</span><div><h2>When works for you?</h2><p>These are preferences only. The team will confirm the actual appointment time.</p></div></div>
-            <div className="formGrid"><div className="field"><label htmlFor="date">Preferred date <span>(optional)</span></label><input id="date" name="date" type="date" min={minDate}/><small>Tripple S is closed on Sundays.</small></div><div className="field"><label htmlFor="time">Preferred time <span>(optional)</span></label><input id="time" name="time" type="time"/></div><div className="field fieldFull"><label htmlFor="referralSource">How did you hear about Tripple S? <span>(optional)</span></label><select id="referralSource" name="referralSource" defaultValue=""><option value="">Choose if you’d like</option><option>Instagram</option><option>Facebook</option><option>Google</option><option>Friend or family</option><option>Returning client</option><option>Other</option></select></div><div className="field fieldFull"><label htmlFor="message">Anything else we should know? <span>(optional)</span></label><textarea id="message" name="message" placeholder="Your goal, preferred timing or a question. Please do not include sensitive medical details here."/></div></div>
+            <div className="formGrid"><div className="field"><label htmlFor="date">Preferred date <span>(optional)</span></label><input id="date" name="date" type="date" min={minDate}/><small>Sunday requests are welcome by appointment. Your preferred date and time are not confirmed until the team contacts you.</small></div><div className="field"><label htmlFor="time">Preferred time <span>(optional)</span></label><input id="time" name="time" type="time"/></div><div className="field fieldFull"><label htmlFor="message">Anything else we should know? <span>(optional)</span></label><textarea id="message" name="message" placeholder="Your goal, preferred timing or a question. Please do not include sensitive medical details here."/></div></div>
           </section>
           {error && <p className="bookingError" role="alert">{error}</p>}
           <button className="button buttonPrimary bookingSubmit" type="submit" disabled={busy}>{busy ? "Sending your request…" : "Send appointment request"} <span aria-hidden="true">→</span></button>
           <p className="bookingPrivacy">Your details are used to respond to this request. Please do not enter sensitive medical information in this form.</p>
         </form>
-        <aside className="bookingAside"><div className="bookingAsideImage"><span className="placeholderMonogram">S</span><span className="placeholderLabel">CLINIC PHOTOGRAPHY PLACEHOLDER</span></div><div className="bookingAsideContent"><span className="kicker">A clear next step</span><h3>We’ll confirm with you personally.</h3><ol><li>Your request reaches the Tripple S team.</li><li>The team reviews your preferred treatment and timing.</li><li>You are contacted to confirm the appointment details.</li></ol><p>Sending a request does not confirm a booking or payment.</p><div className="asideContact"><strong>Visit us</strong><span>Plot 943, Kaunda Road, Gaborone</span><span>Monday – Saturday · 8:00 – 17:00</span><span>Closed Sunday</span></div><a href={whatsapp} className="textLink">Need help? Contact the clinic →</a></div></aside>
+        <aside className="bookingAside"><div className="bookingAsideImage"><span className="placeholderMonogram">S</span><span className="placeholderLabel">CLINIC PHOTOGRAPHY PLACEHOLDER</span></div><div className="bookingAsideContent"><span className="kicker">A clear next step</span><h3>We’ll confirm with you personally.</h3><ol><li>Your request reaches the Tripple S team.</li><li>The team reviews your preferred treatment and timing.</li><li>You are contacted to confirm the appointment details.</li></ol><p>Sending a request does not confirm a booking or payment.</p><div className="asideContact"><strong>Visit us</strong><span>Plot 943, Kaunda Road, Gaborone</span><span>Monday – Saturday · 8:00 – 17:00</span><span>Sunday · By appointment</span></div><a href={whatsapp} className="textLink">Need help? Contact the clinic →</a></div></aside>
       </div>}
     </div>
   </main>;
