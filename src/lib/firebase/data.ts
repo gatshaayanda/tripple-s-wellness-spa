@@ -32,7 +32,7 @@ export async function getServices(): Promise<ServiceRecord[]> {
 
 export async function getPublicServices(): Promise<ServiceRecord[]> {
   try {
-    const [snapshot, catalogueState] = await Promise.all([getDocs(servicesCollection), getDoc(doc(db, "settings", "catalogueState"))]);
+    const [snapshot, catalogueState] = await Promise.all([getDocs(query(servicesCollection, where("active", "==", true))), getDoc(doc(db, "settings", "catalogueState"))]);
     if (snapshot.empty) return catalogueState.data()?.servicesManaged === true ? [] : trippleSServiceSeed;
     return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ServiceRecord, "id">) })).filter((item) => item.active);
   } catch (error) {
