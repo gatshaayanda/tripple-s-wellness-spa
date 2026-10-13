@@ -110,7 +110,7 @@ export async function saveClinicSettings(settings: ClinicSettings) {
 }
 
 
-export type AppointmentRecord = { id:string; date:string; startTime:string; endTime:string; title:string; kind:"APPOINTMENT"|"BLOCK"; notes?:string };
+export type AppointmentRecord = { id:string; date:string; startTime:string; endTime:string; title:string; kind:"APPOINTMENT"|"WALK_IN"|"BLOCK"; notes?:string };
 export type LoyaltyProgramRecord = { id:string; title:string; description:string; discountType:"PERCENT"|"AMOUNT"; value:number; code:string; eligibility:"ALL"|"RETURNING"; active:boolean; startDate?:string; endDate?:string };
 const appointmentsCollection=collection(db,"appointments");
 
