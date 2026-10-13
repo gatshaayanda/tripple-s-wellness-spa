@@ -1,4 +1,4 @@
-export type ServiceCategory = "IV Wellness Drips" | "Medical Aesthetics" | "Skin Treatments" | "Body Contouring" | "Wellness" | "Consultations";
+export type ServiceCategory = "IV Wellness Drips" | "Medical Aesthetics" | "Skin Treatments" | "Body Contouring" | "Wellness" | "Consultations" | "Packages";
 
 export type ServiceSeed = {
   id: string; name: string; category: ServiceCategory; description: string; price: string; duration: string; active: boolean;
