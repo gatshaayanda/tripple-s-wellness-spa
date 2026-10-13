@@ -359,10 +359,19 @@ Use The Plug's evidence vocabulary: **PASS / FAIL / NOT RUN / BLOCKED**. A code 
 ### Product owner QA direction — landing and booking slice (2026-10-13)
 
 - The app is intended to become Tripple S's primary digital front desk; the owned website is a verified source for approved service/product content, not a second booking destination to promote instead of the app.
-- Landing page must show a real seeded treatment menu with published prices/durations, a product catalogue with published prices, clear booking actions, and explicit Sunday closure. Monday and Wednesday are busy; do not pretend a preferred date is confirmed availability.
-- Use tasteful image placeholders until the owner supplies approved social/clinic/product imagery. Admin can manage public image URLs alongside service/product descriptions, prices, durations, active visibility and the “Packages” catalogue category.
+- Landing page must show a real seeded treatment menu with published prices/durations, a product catalogue with published prices, clear booking actions, and owner-managed weekly hours. Sunday is available by appointment by default; never label it closed unless the owner changes the hours. Monday and Wednesday are busy; do not pretend a preferred date is confirmed availability.
+- Use tasteful image placeholders until the owner supplies approved social/clinic/product imagery. Admin can manage public image URLs alongside service/product descriptions, prices, durations, active visibility and the “Packages” catalogue category. Admin-managed clinic settings control each day’s open/closed state, appointment-only status, time window, and a dated public announcement for holiday hours or temporary notices.
 - The footer contains a small one-word **Admin** link to the existing protected `/admin` sign-in; do not expose operational content or add self-service admin registration.
 - Booking must feel light for new and returning clients. Account creation must not block the first request. A real customer account and loyalty/perks feature is a later, separately verified slice; do not claim membership benefits until the owner defines them and the account flow is implemented.
 - Do not build reminder automation, rescheduling/cancellation workflows, treatment-specific prep/aftercare campaigns or follow-up/review request campaigns in this slice.
 - Official public source checked: https://trippleswellnessspa.com/treatments and https://trippleswellnessspa.com/ . Published service and skincare-product prices are seeded in `src/lib/tripple-s/catalog.ts`; the owner can edit records in the admin catalogue. The public site does not currently publish named packages/prices, so no package pricing is fabricated.
 - QA checkpoint is the pushed branch and exact SHA. Do not merge into `main` or deploy production/Firebase rules without explicit authorization.
+
+
+### Product owner QA follow-up — hours and booking (2026-10-13)
+
+- Sunday is **by appointment**, not closed. Public booking must allow Sunday requests and state that the team must confirm the appointment.
+- Weekly hours, open/closed state, appointment-only days, time windows and dated public announcements are stored in the `settings/clinic` Firestore document and editable from Admin. Public hours/announcements are informational and booking preferences remain requests, not confirmed slots.
+- Do not ask “How did you hear about Tripple S?” on the first booking form; remove that non-essential friction for now.
+- New and returning clients must be able to submit a first request without an account. A customer account/history/perks feature must remain optional and use customer-scoped authorization; do not advertise specific rewards until Tripple S approves the benefit and rules.
+- No production deployment, merge or Firebase rules deployment without explicit authorization.
