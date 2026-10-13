@@ -1,6 +1,7 @@
-import { addDoc, collection, deleteDoc, doc, getDocs, query, setDoc, updateDoc, where } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { trippleSProductSeed, trippleSServiceSeed, type ServiceCategory } from "@/lib/tripple-s/catalog";
+import { defaultClinicSettings, type ClinicSettings } from "@/lib/tripple-s/clinic-settings";
 
 export type ServiceRecord = {
   id: string; name: string; category: ServiceCategory; description: string; price: string; duration: string; active: boolean;
@@ -72,3 +73,25 @@ export async function getBookingRequests(): Promise<BookingRequestRecord[]> {
 }
 export async function updateBookingStatus(id: string, status: BookingStatus) { await updateDoc(doc(db, "bookingRequests", id), { status }); }
 export async function updatePaymentStatus(id: string, paymentStatus: PaymentStatus) { await updateDoc(doc(db, "bookingRequests", id), { paymentStatus }); }
+
+
+const clinicSettingsRef = doc(db, "settings", "clinic");
+
+export async function getClinicSettings(): Promise<ClinicSettings> {
+  try {
+    const snapshot = await getDoc(clinicSettingsRef);
+    if (!snapshot.exists()) return defaultClinicSettings;
+    const saved = snapshot.data() as Partial<ClinicSettings>;
+    return {
+      openingHours: { ...defaultClinicSettings.openingHours, ...(saved.openingHours ?? {}) },
+      announcement: { ...defaultClinicSettings.announcement, ...(saved.announcement ?? {}) },
+    };
+  } catch (error) {
+    console.warn("[Tripple S] clinic settings unavailable; using default hours", error);
+    return defaultClinicSettings;
+  }
+}
+
+export async function saveClinicSettings(settings: ClinicSettings) {
+  await setDoc(clinicSettingsRef, settings);
+}
