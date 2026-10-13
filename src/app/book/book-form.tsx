@@ -56,22 +56,24 @@ export default function BookForm() {
     }
 
     const service = services.find((item) => item.id === String(form.get("serviceId") ?? ""));
+    const email = String(form.get("email") ?? "").trim();
+    const preferredTime = String(form.get("time") ?? "").trim();
+    const message = String(form.get("message") ?? "").trim();
+    const referralSource = String(form.get("referralSource") ?? "").trim();
     const request = {
       createdAt: new Date().toISOString(),
       name: String(form.get("name") ?? "").trim(),
       phone: String(form.get("phone") ?? "").trim(),
-      email: String(form.get("email") ?? "").trim() || undefined,
-      serviceId: service?.id,
       serviceNameSnapshot: service?.name || "Consultation / help choosing",
-      priceSnapshot: service?.price,
-      durationSnapshot: service?.duration,
-      preferredDate: requestedDate || undefined,
-      preferredTime: String(form.get("time") ?? "").trim() || undefined,
-      message: String(form.get("message") ?? "").trim() || undefined,
       clientType,
-      referralSource: String(form.get("referralSource") ?? "").trim() || undefined,
       status: "NEW" as const,
       paymentStatus: "PAYMENT_PENDING" as const,
+      ...(email ? { email } : {}),
+      ...(service ? { serviceId: service.id, priceSnapshot: service.price, durationSnapshot: service.duration } : {}),
+      ...(requestedDate ? { preferredDate: requestedDate } : {}),
+      ...(preferredTime ? { preferredTime } : {}),
+      ...(message ? { message } : {}),
+      ...(referralSource ? { referralSource } : {}),
     };
 
     if (!request.name || !request.phone) {
