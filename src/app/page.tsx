@@ -2,50 +2,76 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getPublicServices, type ServiceRecord } from "@/lib/firebase/data";
+import { getPublicProducts, getPublicServices, type ProductRecord, type ServiceRecord } from "@/lib/firebase/data";
 
 const categories = [
-  ["IV Wellness Drips", "Hydration, glow and wellness support."],
-  ["Skin Treatments", "Peels, facials and microneedling."],
-  ["Medical Aesthetics", "Clinical aesthetic treatments with professional oversight."],
-  ["Body Contouring", "Body contouring and sauna wellness."],
+  { title: "IV Wellness", detail: "Clinician-guided wellness drips and personalised support.", symbol: "✦" },
+  { title: "Skin Treatments", detail: "Facials, peels and skin-focused care.", symbol: "◌" },
+  { title: "Medical Aesthetics", detail: "Aesthetic treatments with professional oversight.", symbol: "＋" },
+  { title: "Body Contouring", detail: "Explore body-contouring and wellness options.", symbol: "⌁" },
 ];
-
 const whatsapp = "https://wa.me/26774866703?text=Hello%20Tripple%20S%2C%20I%27d%20like%20to%20enquire.";
+
+function ImagePlaceholder({ imageUrl, label, className = "" }: { imageUrl?: string; label: string; className?: string }) {
+  return <div className={`imagePlaceholder ${className}`} role="img" aria-label={label} style={imageUrl ? { backgroundImage: `linear-gradient(180deg, transparent 35%, rgba(23,22,20,.34)), url("${imageUrl}")` } : undefined}>
+    {!imageUrl && <><span className="placeholderMonogram">S</span><span className="placeholderLabel">TRIPPLE S · IMAGE TO ADD</span></>}
+  </div>;
+}
 
 export default function Home() {
   const [services, setServices] = useState<ServiceRecord[]>([]);
+  const [products, setProducts] = useState<ProductRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    void getPublicServices().then((items) => setServices(items.filter((item) => item.active))).catch(() => setServices([])).finally(() => setLoading(false));
+    let active = true;
+    void Promise.all([getPublicServices(), getPublicProducts()])
+      .then(([serviceItems, productItems]) => {
+        if (!active) return;
+        setServices(serviceItems.filter((item) => item.active));
+        setProducts(productItems.filter((item) => item.active));
+      })
+      .catch(() => { if (active) { setServices([]); setProducts([]); } })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, []);
 
   return <main className="site">
-    <div className="topbar"><div className="container topbarInner"><span>Gaborone · Plot 943, Kaunda Road</span><strong>Medical Aesthetics · Wellness</strong><a href={whatsapp}>WhatsApp Tripple S</a></div></div>
-    <nav className="nav"><div className="container navInner"><Link href="/" className="brand" aria-label="Tripple S Wellness Spa home"><span className="brandMark">S</span><span>TRIPPLE S<span>WELLNESS SPA</span></span></Link><div className="navLinks"><a href="#treatments">Treatments</a><a href="#care">Our care</a><a href="#visit">Visit</a></div><Link href="/book" className="button buttonPrimary">Book an appointment</Link></div></nav>
+    <div className="topbar"><div className="container topbarInner"><span>Plot 943, Kaunda Road · Gaborone</span><strong>Medical Aesthetics · Skin Health · Wellness</strong><a href="tel:+26774866703">Call the clinic</a></div></div>
+    <nav className="nav"><div className="container navInner"><Link href="/" className="brand" aria-label="Tripple S Wellness Spa home"><span className="brandMark">S</span><span>TRIPPLE S<span>WELLNESS SPA</span></span></Link><div className="navLinks"><a href="#treatments">Treatments & prices</a><a href="#our-care">Our approach</a><a href="#visit">Visit</a></div><Link href="/book" className="button buttonPrimary">Book a visit <span aria-hidden="true">↗</span></Link></div></nav>
 
-    <section className="hero">
+    <section className="hero heroEditorial">
       <div className="container heroGrid">
-        <div>
-          <span className="eyebrow">Medical Aesthetics · Gaborone</span>
-          <h1>Where beauty meets <em>medical excellence.</em></h1>
-          <p>Advanced medical aesthetics, IV wellness, skin health and body contouring — delivered with clinical precision in a serene, private setting.</p>
-          <div className="actions"><Link href="/treatments" className="button buttonPrimary">Explore treatments</Link><Link href="/book?service=skin-consultation" className="button buttonLight">Book a consultation</Link></div>
-          <p className="heroNote">Suitability is determined by the Tripple S clinical team.</p>
+        <div className="heroCopy">
+          <span className="eyebrow">A considered kind of care · Gaborone</span>
+          <h1>Feel good in your skin. <em>Feel cared for.</em></h1>
+          <p>Medical aesthetics, skin health and wellness, with professional oversight and a personal touch. Start with a treatment you know, or tell us what you hope to improve.</p>
+          <div className="actions"><Link href="/treatments" className="button buttonPrimary">Explore treatments & prices</Link><Link href="/book?service=skin-consultation" className="button buttonLight">Help me choose</Link></div>
+          <div className="trustLine"><span>✦</span> Personalised care <span>·</span> Discreet setting <span>·</span> Clinical guidance</div>
         </div>
-        <div className="heroVisual" aria-label="Tripple S Wellness Spa"><div className="orb orbOne" /><div className="orb orbTwo" /><div className="heroCard"><span>TRIPPLE S</span><strong>Medical Wellness</strong><small>Personalised · Discreet · Clinical</small></div></div>
+        <div className="heroArtwork">
+          <ImagePlaceholder label="Tripple S hero photography placeholder" className="heroImage" />
+          <div className="heroCaption"><span>TRIPPLE S WELLNESS SPA</span><strong>Where beauty meets medical excellence.</strong><small>Photography placeholder · replace with approved clinic imagery</small></div>
+          <div className="heroStamp"><span>CARE</span><span>WITH</span><span>CLARITY</span></div>
+        </div>
       </div>
     </section>
 
-    <section id="care" className="section sectionSoft"><div className="container"><div className="sectionHead"><span className="kicker">Our care</span><h2>Clinical rigor, wrapped in warmth.</h2><p>Tripple S combines professional oversight with a calm, personal experience. Your goals, assessment and the clinical team&apos;s guidance shape what happens next.</p></div><div className="cards">{categories.map(([title,detail]) => <article className="card" key={title}><div className="cardIcon">{title === "IV Wellness Drips" ? "✦" : title === "Skin Treatments" ? "◌" : title === "Medical Aesthetics" ? "＋" : "⌁"}</div><h3>{title}</h3><p>{detail}</p></article>)}</div></div></section>
+    <section className="introStrip"><div className="container introStripInner"><span className="kicker">Your visit, made simpler</span><p>Explore the menu, see published prices and send a request in a few steps. No account is required to get started.</p><Link href="/book" className="textLink">Start your request →</Link></div></section>
 
-    <section id="treatments" className="section"><div className="container"><div className="sectionHead sectionHeadRow"><div><span className="kicker">Featured treatments</span><h2>Choose a treatment, or tell us what you want to improve.</h2></div><Link href="/treatments" className="textLink">View all treatments →</Link></div>{loading ? <div className="loadingCard">Opening the Tripple S treatment catalogue…</div> : services.length === 0 ? <div className="emptyPublic"><h3>The treatment catalogue is being prepared.</h3><p>You can still request a consultation and the clinical team can guide you.</p><Link href="/book?service=skin-consultation" className="button buttonPrimary">Book a consultation</Link></div> : <div className="serviceGrid">{services.slice(0, 6).map((service) => <article className="serviceCard" key={service.id}><span>{service.category}</span><h3>{service.name}</h3><p>{service.description}</p><div className="serviceMeta"><strong>{service.price}</strong><small>{service.duration}</small></div><div className="actions serviceCardActions"><Link href={`/treatments/${encodeURIComponent(service.id)}`} className="button buttonLight">View details</Link><Link href={`/book?service=${encodeURIComponent(service.id)}`} className="button buttonDark">Request appointment</Link></div></article>)}</div>}</div></section>
+    <section id="our-care" className="section sectionSoft"><div className="container"><div className="sectionHead"><span className="kicker">Our approach</span><h2>Clinical care, with room to feel at ease.</h2><p>Your goals matter. The Tripple S clinical team guides suitability and next steps, so you do not have to diagnose yourself or know exactly where to begin.</p></div><div className="cards">{categories.map((item) => <article className="card careCard" key={item.title}><div className="cardIcon">{item.symbol}</div><h3>{item.title}</h3><p>{item.detail}</p><Link href="/treatments" className="textLink">Explore options →</Link></article>)}</div></div></section>
 
-    <section className="confidence"><div className="container confidenceGrid"><div><span className="kicker">Before your visit</span><h2>Not sure what you need?</h2><p>Tell us what you would like to improve. You do not need to diagnose yourself or choose the perfect treatment before speaking with the team.</p></div><Link href="/book?service=skin-consultation" className="button buttonLight">Start with a consultation</Link></div></section>
+    <section id="treatments" className="section"><div className="container"><div className="sectionHead sectionHeadRow"><div><span className="kicker">Treatments & pricing</span><h2>Find a place to begin.</h2><p>Published prices are shown in Botswana Pula. Some treatments may require a consultation or assessment.</p></div><Link href="/treatments" className="textLink">View full menu →</Link></div>
+      {loading ? <div className="loadingCard">Opening the Tripple S menu…</div> : services.length === 0 ? <div className="emptyPublic"><h3>The menu is temporarily unavailable.</h3><p>You can still request a consultation and the team can guide you.</p><Link href="/book?service=skin-consultation" className="button buttonPrimary">Start with a consultation</Link></div> : <div className="serviceGrid homeServiceGrid">{services.slice(0, 6).map((service) => <article className="serviceCard homeServiceCard" key={service.id}><ImagePlaceholder imageUrl={service.imageUrl} label={`${service.name} photography`} className="serviceImage" /><span>{service.category}</span><h3>{service.name}</h3><p>{service.description}</p><div className="serviceMeta"><strong>{service.price}</strong><small>{service.duration}</small></div><Link href={`/book?service=${encodeURIComponent(service.id)}`} className="button buttonDark">Request this treatment</Link></article>)}</div>}
+      <div className="catalogNote"><span>✦</span><p>Not sure which treatment is right for you? Start with a consultation. Suitability is determined by the Tripple S clinical team.</p><Link href="/book?service=skin-consultation" className="textLink">Ask for guidance →</Link></div>
+    </div></section>
 
-    <section id="visit" className="visit"><div className="container visitGrid"><div><span className="kicker">Visit Tripple S</span><h2>Your appointment starts with clarity.</h2><p>Plot 943, Kaunda Road, Gaborone.</p><p>Mon – Fri 8:00 – 17:00<br />Saturday 8:00 – 17:00<br />Sunday by appointment</p></div><div className="visitCard"><strong>What happens next</strong><ol><li>Send an appointment request.</li><li>The team reviews your request.</li><li>Tripple S contacts you to confirm the details.</li></ol><div className="actions"><Link href="/book" className="button buttonPrimary">Request an appointment</Link><a href={whatsapp} className="button buttonLight">WhatsApp</a></div></div></div></section>
+    <section className="memberSection"><div className="container memberGrid"><div><span className="kicker">Your Tripple S journey</span><h2>Good care should feel personal from the first visit.</h2><p>Start with a simple request today. We’re shaping a more connected client experience for returning visits and future member benefits.</p></div><div className="memberCard"><span className="memberSymbol">S</span><strong>Your care, all in one place.</strong><p>No account needed to request your first visit. We’ll make the next steps clear.</p><Link href="/book" className="button buttonLight">Make an appointment request</Link></div></div></section>
 
-    <footer className="footer"><div className="container footerGrid"><div><div className="brand brandFooter"><span className="brandMark">S</span><span>TRIPPLE S<span>WELLNESS SPA</span></span></div><p>Medical aesthetics · Skin health · Wellness</p></div><div><strong>Explore</strong><Link href="/treatments">Treatments</Link><Link href="/book">Book</Link><a href={whatsapp}>WhatsApp</a></div><div><strong>Visit</strong><span>Plot 943, Kaunda Road</span><span>Gaborone, Botswana</span><span>Mon – Sat · 8:00 – 17:00</span></div></div><div className="container footerBottom">© 2026 Tripple S Wellness Spa</div></footer>
+    {products.length > 0 && <section className="section productSection"><div className="container"><div className="sectionHead sectionHeadRow"><div><span className="kicker">At-home skincare</span><h2>Continue your routine with care.</h2><p>Explore products listed by Tripple S. Contact the team to enquire about current availability.</p></div></div><div className="productGrid">{products.slice(0, 5).map((product) => <article className="productCard" key={product.id}><ImagePlaceholder imageUrl={product.imageUrl} label={`${product.name} product image`} className="productImage" /><span className="kicker">{product.size || "Professional skincare"}</span><h3>{product.name}</h3><p>{product.description}</p><div className="serviceMeta"><strong>{product.price}</strong><a href={`https://wa.me/26774866703?text=${encodeURIComponent(`Hello Tripple S, I would like to enquire about ${product.name} (${product.price}).`)}`} className="textLink">Enquire →</a></div></article>)}</div></div></section>}
+
+    <section id="visit" className="visit"><div className="container visitGrid"><div><span className="kicker">Visit Tripple S</span><h2>Your appointment starts with clarity.</h2><p>Plot 943, Kaunda Road, Gaborone, Botswana.</p><p>Monday – Saturday · 8:00 – 17:00<br /><strong>Closed Sunday</strong></p><small>Hours supplied for this app; confirm any holiday changes with the clinic.</small></div><div className="visitCard"><strong>What happens next</strong><ol><li>Tell us what you are interested in.</li><li>The team reviews your request.</li><li>Tripple S contacts you to confirm timing and next steps.</li></ol><Link href="/book" className="button buttonPrimary">Request an appointment</Link></div></div></section>
+
+    <footer className="footer"><div className="container footerGrid"><div><div className="brand brandFooter"><span className="brandMark">S</span><span>TRIPPLE S<span>WELLNESS SPA</span></span></div><p>Medical aesthetics · Skin health · Wellness</p><a href={whatsapp}>Questions? Contact the clinic</a></div><div><strong>Explore</strong><Link href="/treatments">Treatments & prices</Link><Link href="/book">Book a visit</Link><a href="#our-care">Our approach</a></div><div><strong>Find us</strong><span>Plot 943, Kaunda Road</span><span>Gaborone, Botswana</span><span>Monday – Saturday · 8:00 – 17:00</span><span>Closed Sunday</span></div></div><div className="container footerBottom"><span>© 2026 Tripple S Wellness Spa</span><Link href="/admin" className="adminFooterLink" aria-label="Admin sign in">Admin</Link></div></footer>
   </main>;
 }
