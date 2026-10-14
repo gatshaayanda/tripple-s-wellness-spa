@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     const finalPrice = basePrice === null ? undefined : "P" + (basePrice-discountAmount).toFixed(2).replace(/\.00$/,"");
     const idRef = db.collection("bookingRequests").doc();
     const occupied: string[] = [];
-    for (let minute=mins(time); minute<end+Number(settings.bookingRules.bufferMinutes||0); minute+=15) occupied.push(clock(minute));
+    for (let minute=Math.floor(mins(time)/15)*15; minute<end+Number(settings.bookingRules.bufferMinutes||0); minute+=15) occupied.push(clock(minute));
     const reservationRefs = occupied.map((value) => db.collection("slotReservations").doc(slotId(date,value)));
     stage = "reservation_transaction";
     await db.runTransaction(async (tx) => {
