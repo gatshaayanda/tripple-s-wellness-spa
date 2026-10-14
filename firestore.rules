@@ -33,6 +33,11 @@ service cloud.firestore {
       allow create: if false;
     }
 
+    // Customer wellness data is accessed only through UID-scoped server routes.
+    match /customerWellness/{uid} {
+      allow read, write: if false;
+    }
+
     match /clients/{clientId} {
       allow read, write: if isAdmin();
     }

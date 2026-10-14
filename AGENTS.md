@@ -452,3 +452,41 @@ Use The Plug's evidence vocabulary: **PASS / FAIL / NOT RUN / BLOCKED**. A code 
 - Remove the public “Use local demo calendar” action and the Admin “Open local demo” access path. Admin CRUD must remain authenticated and persist to the live clinic data service.
 - If availability or submission fails, show the actual server error message and a retry path; do not report a request as received unless the API confirms persistence. Local demo helpers are not an approved customer/admin workflow.
 - The current production availability 503 root cause remains **unverified**. The Vercel runtime-log/environment connector calls returned project access/not-found errors, so do not assume missing Firebase configuration or claim the live calendar is fixed. Obtain the actual deployed function error and verify the correct production project/environment before making infrastructure changes.
+
+## My Tripple S — product direction locked 2026-10-14
+
+### Product promise
+My Tripple S is the customer's ongoing care companion, not merely a booking receipt. The customer journey is Discover → Understand → Request a visit → Create/recover account access → Prepare → Attend → Follow up → Return. Every public page must provide an obvious route back to My Tripple S on desktop and mobile; customers must never have to start another booking to find their account.
+
+### Intentional onboarding
+- Make a lasting customer profile the normal guided path during the first booking/account journey. Explain concrete value: appointment history, next steps, preferences and relevant clinic updates.
+- Reuse booking details already supplied; avoid asking for them twice.
+- Do not equate a Firebase anonymous session with a recoverable account. Offer an explicit secure account-link/sign-in path, communicate limitations honestly, and preserve collision handling.
+- Never silently merge histories or disclose one customer's records to another identity. Booking submission must not be falsely reported as confirmed; only an authorized staff status change may confirm.
+- Keep booking available if identity-provider setup is unavailable; show a clear recovery path rather than losing a valid request.
+
+### My Tripple S experience pillars
+1. **My Care:** private appointment-request history, real statuses, clinic-authored preparation/aftercare and clear next actions.
+2. **My Garden:** a calm, optional virtual garden that grows through customer-chosen gentle rituals. No punitive streaks, leaderboards, coercive reminders or implication that virtual growth measures health.
+3. **My Journal:** optional personal reflections and self-chosen routine notes. Keep entries private to the authenticated customer by default, server-authorized by UID, bounded in size, and deletable. Do not turn this into an EMR or solicit sensitive medical details.
+4. **Wellness Feed:** concise, trustworthy, low-pressure content and genuine clinic-published updates. Clearly distinguish general wellness prompts from clinic-approved aftercare. Do not fabricate offers, services, medical benefits or clinical advice.
+
+### Privacy, clinical and engagement guardrails
+- Wellness features are supportive, not diagnostic. No diagnosis, treatment recommendation, outcome prediction, invented health score, or claims that a garden/journal reflects clinical progress.
+- Minimise sensitive data; explain what is saved and who can access it. Journal data must not be readable by staff/admin unless a future explicit, separately reviewed sharing feature is designed and consented to.
+- Notifications, marketing, journal participation and wellness reminders are opt-in and independently controllable. No guilt, streak-loss pressure, fear-based beauty messaging or excessive nudging.
+- Any shared-care/family feature must not collect another person's health/contact details without their permission.
+- Only show active, published clinic offers. Never invent loyalty points, balances or rewards.
+
+### Booking interaction
+- Date/time selection should be compact on mobile (e.g. a disclosure/modal/bottom sheet) while retaining accessible controls and selected-time visibility.
+- Available times must come from the live availability endpoint; do not invent fallback slots. Revalidate at submission, respect configured interval, service duration, buffers, opening/closing times and conflict checks.
+- A booking request remains pending until the clinic reviews it and updates status. Never describe a request as confirmed on submission.
+
+### Acceptance gates for this direction
+- Persistent My Tripple S access is visible at mobile and desktop widths.
+- Account history remains customer-scoped and Google/account collisions never silently merge identities.
+- Garden/journal state is persisted server-side against the verified customer UID; unauthorized users cannot read/write another customer's data; entries can be deleted.
+- Time selector is compact and keyboard/screen-reader usable; selection remains visible and existing live availability validation is unchanged.
+- Feed content is truthful, low-pressure and clearly separated from clinic-published offers/aftercare.
+- Run repository lint/build and inspect the diff before checkpoint. Report unavailable local/runtime verification honestly; a GitHub push or Vercel READY state alone is not proof of real customer behaviour.

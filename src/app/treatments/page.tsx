@@ -30,7 +30,7 @@ export default function TreatmentsPage() {
       <nav className="nav">
         <div className="container navInner">
           <Link href="/" className="brand"><span className="brandMark">S</span><span>TRIPPLE S<span>WELLNESS SPA</span></span></Link>
-          <div className="navLinks"><Link href="/account" className="textLink">My Tripple S</Link><Link href="/book" className="button buttonPrimary">Book an appointment</Link></div>
+          <div className="navLinks"><Link href="/account" className="textLink">My Tripple S</Link><Link href="/book" className="button buttonPrimary">Book an appointment</Link></div><Link href="/account" className="button buttonLight mobileAccountLink">My account</Link><Link href="/book" className="button buttonPrimary mobileBookLink">Book</Link>
         </div>
       </nav>
 
