@@ -8,8 +8,10 @@ export async function POST(request:NextRequest){
  if(!id||!allowed.has(status))return NextResponse.json({error:"Choose a valid request status."},{status:400});
  try{
   const db=getAdminDb(),ref=db.collection("bookingRequests").doc(id);
+  let customerUid="";
   await db.runTransaction(async tx=>{
    const requestSnap=await tx.get(ref);if(!requestSnap.exists)throw new Error("REQUEST_NOT_FOUND");
+   customerUid=String(requestSnap.data()?.customerUid??"");
    const held= status==="DECLINED"||status==="CANCELLED"||status==="RESCHEDULED" ? await tx.get(db.collection("slotReservations").where("bookingRequestId","==",id)) : null;
    tx.update(ref,{status});
    if(held)held.docs.forEach(item=>tx.delete(item.ref));

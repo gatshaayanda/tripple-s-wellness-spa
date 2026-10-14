@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const distance = Math.round((new Date(date + "T00:00:00+02:00").getTime() - new Date(today + "T00:00:00+02:00").getTime()) / 86400000);
     if (distance < 0 || distance > settings.bookingRules.advanceBookingDays) return NextResponse.json({ slots: [], note: "Choose a date within the booking window." });
     const [reservations, appointments, requests] = await Promise.all([db.collection("slotReservations").where("date", "==", date).get(), db.collection("appointments").where("date", "==", date).get(), db.collection("bookingRequests").where("preferredDate", "==", date).get()]);
-    const events = appointments.docs.map((item) => ({ id: item.id, ...item.data() })).filter((item) => item.status !== "CANCELLED");
+    const events = appointments.docs.map((item) => { const data=item.data(); return { id:item.id, status:String(data.status??""), startTime:typeof data.startTime==="string"?data.startTime:"", endTime:typeof data.endTime==="string"?data.endTime:"" }; }).filter((item) => item.status !== "CANCELLED");
     const heldRequestDocs = requests.docs.filter((item) => !["CANCELLED", "DECLINED", "RESCHEDULED"].includes(String(item.data().status ?? "")) && typeof item.data().preferredTime === "string");
     const heldRequests = heldRequestDocs.map((item) => item.data());
     const activeRequestIds = new Set(heldRequestDocs.map((item) => item.id));
