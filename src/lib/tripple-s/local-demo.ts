@@ -29,7 +29,8 @@ export function isLocalDemoMode(): boolean {
   return false;
 }
 
-export function setLocalDemoMode(_enabled: boolean): void {
+export function setLocalDemoMode(enabled: boolean): void {
+  void enabled;
   if (typeof window !== "undefined") window.localStorage.removeItem(MODE_KEY);
 }
 
