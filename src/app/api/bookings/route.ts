@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminDb } from "@/lib/firebase/admin";
+import { getAdminDb, requireCustomer } from "@/lib/firebase/admin";
 import { trippleSServiceSeed, type ServiceSeed } from "@/lib/tripple-s/catalog";
 import { defaultClinicSettings, type DayKey } from "@/lib/tripple-s/clinic-settings";
 export const dynamic = "force-dynamic";
@@ -12,6 +12,9 @@ const priceOf = (value: string | undefined) => { if (!value || /[-–—]/.test(
 export async function POST(request: NextRequest) {
   let body: Record<string, unknown>;
   try { body = await request.json() as Record<string, unknown>; } catch { return NextResponse.json({ error: "Please check the booking details and try again." }, { status: 400 }); }
+  const authorization=request.headers.get("authorization");
+  const customer=authorization?await requireCustomer(request):null;
+  if(authorization&&!customer)return NextResponse.json({error:"Your customer session expired. Please retry your request."},{status:401});
   const name = String(body.name ?? "").trim().slice(0, 120);
   const phone = String(body.phone ?? "").trim().slice(0, 40);
   const email = String(body.email ?? "").trim().slice(0, 200);
@@ -27,7 +30,7 @@ export async function POST(request: NextRequest) {
     const db = getAdminDb();
     const settingsSnap = await db.collection("settings").doc("clinic").get();
     const saved = settingsSnap.data() ?? {};
-    const settings = { openingHours: { ...defaultClinicSettings.openingHours, ...(saved.openingHours ?? {}) }, bookingRules: { ...defaultClinicSettings.bookingRules, ...(saved.bookingRules ?? {}) } };
+    const settings = { openingHours: { ...defaultClinicSettings.openingHours, ...(saved.openingHours ?? {}) }, bookingRules: { ...defaultClinicSettings.bookingRules, ...(saved.bookingRules ?? {}), minimumNoticeHours: 0 } };
     settings.openingHours.sunday = { ...defaultClinicSettings.openingHours.sunday, ...(saved.openingHours?.sunday ?? {}), open: true, byAppointment: true };
     const day = days[new Date(date + "T12:00:00+02:00").getUTCDay()];
     
@@ -65,11 +68,16 @@ export async function POST(request: NextRequest) {
     for (let minute=mins(time); minute<end+Number(settings.bookingRules.bufferMinutes||0); minute+=15) occupied.push(clock(minute));
     const reservationRefs = occupied.map((value) => db.collection("slotReservations").doc(slotId(date,value)));
     await db.runTransaction(async (tx) => {
-      const snapshots = await Promise.all(reservationRefs.map((ref) => tx.get(ref)));
-      if (snapshots.some((snapshot) => snapshot.exists)) throw new Error("SLOT_TAKEN");
-      const payload = { createdAt:new Date().toISOString(), name, phone, ...(email?{email}:{}), ...(serviceId?{serviceId}:{}), serviceNameSnapshot:String(service?.name??"Consultation / help choosing"), ...(service?{priceSnapshot:String(service.price??""),durationSnapshot:String(service.duration??duration+" min")}:{durationSnapshot:duration+" min"}), preferredDate:date, preferredTime:time, clientType, status:"NEW", paymentStatus:"PAYMENT_PENDING", ...(message?{message}:{}), ...(discount?{discountCodeSnapshot:String(discount.code),discountAmountSnapshot:discountAmount,...(finalPrice?{finalPriceSnapshot:finalPrice}:{})}:{}) };
+      const snapshots=await Promise.all(reservationRefs.map((ref)=>tx.get(ref)));
+      const ownerRefs=snapshots.flatMap(snapshot=>{const data=snapshot.data();if(data?.bookingRequestId)return [db.collection("bookingRequests").doc(String(data.bookingRequestId))];if(data?.appointmentId)return [db.collection("appointments").doc(String(data.appointmentId))];return [];});
+      const uniqueOwnerRefs=Array.from(new Map(ownerRefs.map(ref=>[ref.path,ref])).values());
+      const ownerSnapshots=await Promise.all(uniqueOwnerRefs.map(ref=>tx.get(ref)));
+      const owners=new Map(ownerSnapshots.map(snapshot=>[snapshot.ref.path,snapshot]));
+      const hasLiveConflict=snapshots.some(snapshot=>{if(!snapshot.exists)return false;const data=snapshot.data()??{};if(data.bookingRequestId){const owner=owners.get(db.collection("bookingRequests").doc(String(data.bookingRequestId)).path);return Boolean(owner?.exists&&!["CANCELLED","DECLINED","RESCHEDULED"].includes(String(owner.data()?.status??"")));}if(data.appointmentId){const owner=owners.get(db.collection("appointments").doc(String(data.appointmentId)).path);return Boolean(owner?.exists&&owner.data()?.status!=="CANCELLED");}return false;});
+      if(hasLiveConflict)throw new Error("SLOT_TAKEN");
+      const payload = { createdAt:new Date().toISOString(), ...(customer?{customerUid:customer.uid}:{}), name, phone, ...(email?{email}:{}), ...(serviceId?{serviceId}:{}), serviceNameSnapshot:String(service?.name??"Consultation / help choosing"), ...(service?{priceSnapshot:String(service.price??""),durationSnapshot:String(service.duration??duration+" min")}:{durationSnapshot:duration+" min"}), preferredDate:date, preferredTime:time, clientType, status:"NEW", paymentStatus:"PAYMENT_PENDING", ...(message?{message}:{}), ...(discount?{discountCodeSnapshot:String(discount.code),discountAmountSnapshot:discountAmount,...(finalPrice?{finalPriceSnapshot:finalPrice}:{})}:{}) };
       tx.create(idRef,payload);
-      for (let i=0;i<reservationRefs.length;i++) tx.create(reservationRefs[i],{date,time:occupied[i],bookingRequestId:idRef.id,kind:"booking-request",createdAt:new Date().toISOString()});
+      for (let i=0;i<reservationRefs.length;i++) tx.set(reservationRefs[i],{date,time:occupied[i],bookingRequestId:idRef.id,kind:"booking-request",createdAt:new Date().toISOString()});
     });
     return NextResponse.json({id:idRef.id,reference:idRef.id.slice(0,8).toUpperCase(),discountAmount,finalPrice},{status:201});
   } catch (error) {

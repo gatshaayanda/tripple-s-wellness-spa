@@ -63,7 +63,7 @@ export default function Home() {
   return <main className="site">
     {showAnnouncement && <div className="publicAnnouncement" role="status"><strong>{clinicSettings.announcement.title || "Clinic notice"}</strong><span>{clinicSettings.announcement.message}</span></div>}
     <div className="topbar"><div className="container topbarInner"><span>Plot 943, Kaunda Road · Gaborone</span><strong>Medical Aesthetics · Skin Health · Wellness</strong><a href="tel:+26774866703">Call the clinic</a></div></div>
-    <nav className="nav"><div className="container navInner"><Link href="/" className="brand" aria-label="Tripple S Wellness Spa home"><span className="brandMark">S</span><span>TRIPPLE S<span>WELLNESS SPA</span></span></Link><div className="navLinks"><a href="#treatments">Treatments & prices</a><a href="#our-care">Our approach</a><a href="#visit">Visit</a></div><Link href="/book" className="button buttonPrimary">Book a visit <span aria-hidden="true">↗</span></Link></div></nav>
+    <nav className="nav"><div className="container navInner"><Link href="/" className="brand" aria-label="Tripple S Wellness Spa home"><span className="brandMark">S</span><span>TRIPPLE S<span>WELLNESS SPA</span></span></Link><div className="navLinks"><a href="#treatments">Treatments & prices</a><a href="#our-care">Our approach</a><a href="#visit">Visit</a><Link href="/account">My Tripple S</Link></div><Link href="/book" className="button buttonPrimary">Book a visit <span aria-hidden="true">↗</span></Link></div></nav>
 
     <section className="hero heroEditorial">
       <div className="container heroGrid">

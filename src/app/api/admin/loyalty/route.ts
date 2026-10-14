@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminDb, requireAdmin } from "@/lib/firebase/admin";
+import { getAdminDb, getAdminMessaging, requireAdmin } from "@/lib/firebase/admin";
 export const dynamic = "force-dynamic";
 const safeFields = (doc: FirebaseFirestore.QueryDocumentSnapshot) => {
  const d=doc.data();
@@ -19,7 +19,19 @@ export async function POST(request:NextRequest){
   const db=getAdminDb(),all=await db.collection("loyaltyPrograms").get();
   const duplicate=all.docs.some(d=>d.id!==id&&String(d.data().code||"").toUpperCase()===code);
   if(duplicate)return NextResponse.json({error:"That offer code is already in use."},{status:409});
-  await db.collection("loyaltyPrograms").doc(id).set({title,description,code,discountType,value,eligibility,active,startDate,endDate,updatedAt:new Date().toISOString()},{merge:true});
+  const offerRef=db.collection("loyaltyPrograms").doc(id),previous=await offerRef.get();
+  await offerRef.set({title,description,code,discountType,value,eligibility,active,startDate,endDate,updatedAt:new Date().toISOString()},{merge:true});
+  // Notify only opted-in customers when an offer is first published or reactivated.
+  if(active&&(!previous.exists||previous.data()?.active!==true)){
+   try{
+    const recipients=await db.collection("notificationPreferences").where("offersAndNews","==",true).get();
+    const link=new URL("/account",process.env.NEXT_PUBLIC_BASE_URL||"https://tripple-s-wellness-spa.vercel.app").toString();
+    await Promise.all(recipients.docs.filter(item=>item.data().enabled===true).map(async recipient=>{
+     const tokens=await db.collection("notificationTokens").doc(recipient.id).collection("devices").get();
+     await Promise.all(tokens.docs.map(async device=>{const token=String(device.data().token??"");if(!token)return;try{await getAdminMessaging().send({token,notification:{title:"A new Tripple S offer is available",body:title},webpush:{fcmOptions:{link}}});}catch(error){console.error("[Tripple S] offer push failed",error instanceof Error?error.message:"unknown");}}));
+    }));
+   }catch(error){console.error("[Tripple S] offer notification setup unavailable",error instanceof Error?error.message:"unknown");}
+  }
   return NextResponse.json({ok:true});
  }catch{return NextResponse.json({error:"Offer could not be saved."},{status:500});}
 }
