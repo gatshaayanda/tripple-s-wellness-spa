@@ -8,6 +8,7 @@ import { getClinicSettings, getPublicServices, type ServiceRecord } from "@/lib/
 import { defaultClinicSettings, dayLabels, isAnnouncementVisible, type ClinicSettings, type DayKey } from "@/lib/tripple-s/clinic-settings";
 
 const whatsapp = "https://wa.me/26774866703?text=Hello%20Tripple%20S%2C%20I%27d%20like%20to%20enquire.";
+type SubmittedSummary = { name: string; serviceName: string; date: string; time: string; price: string; duration: string };
 function localDateValue() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -28,6 +29,7 @@ export default function BookForm() {
   const [loadingServices, setLoadingServices] = useState(true);
   const [submitted, setSubmitted] = useState(false);
   const [reference, setReference] = useState("");
+  const [submittedSummary, setSubmittedSummary] = useState<SubmittedSummary | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [clientType, setClientType] = useState<"NEW" | "RETURNING">("NEW");
@@ -61,6 +63,9 @@ export default function BookForm() {
   const selectedDay = preferredDate ? dayKeys[new Date(`${preferredDate}T12:00:00`).getDay()] : null;
   const selectedHours = selectedDay ? clinicSettings.openingHours[selectedDay] : undefined;
   const showAnnouncement = isAnnouncementVisible(clinicSettings);
+  const bookingWhatsApp = submittedSummary
+    ? "https://wa.me/26774866703?text=" + encodeURIComponent(`Hello Tripple S. I submitted an appointment request through your website.\nReference: #${reference}\nName: ${submittedSummary.name}\nTreatment: ${submittedSummary.serviceName}\nRequested appointment: ${submittedSummary.date} at ${submittedSummary.time}\nEstimated price: ${submittedSummary.price}\nPlease confirm my appointment and advise me on the next steps. Thank you.`)
+    : whatsapp;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -106,7 +111,9 @@ export default function BookForm() {
       const response = await fetch("/api/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...request, time: selectedTime, discountCode }) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "The appointment request could not be saved.");
-      setReference(String(result.id).slice(0, 8).toUpperCase());
+      const requestReference = String(result.reference || result.id).slice(0, 8).toUpperCase();
+      setReference(requestReference);
+      setSubmittedSummary({ name: request.name, serviceName: request.serviceNameSnapshot, date: requestedDate, time: preferredTime, price: String(result.finalPrice || service?.price || "To be confirmed with the team"), duration: service?.duration || "To be confirmed" });
       setSubmitted(true);
       formElement.reset();
     } catch (err) {
@@ -122,7 +129,7 @@ export default function BookForm() {
     {showAnnouncement && <div className="container publicAnnouncement" role="status"><strong>{clinicSettings.announcement.title || "Clinic notice"}</strong><span>{clinicSettings.announcement.message}</span></div>}
     <div className="bookingIntro"><div className="bookingIntroInner"><span className="kicker">Your Tripple S visit</span><h1>A few details. <em>We’ll take it from here.</em></h1><p>Tell us how to reach you and what you have in mind. You can choose a treatment or ask the clinical team to guide you.</p><div className="bookingSteps"><span><b>01</b> Your details</span><span><b>02</b> Your preferences</span><span><b>03</b> We confirm with you</span></div></div></div>
     <div className="formWrap formWrapWide">
-      {submitted ? <div className="formCard confirm confirmEditorial"><span className="confirmIcon">✦</span><span className="kicker">Request received</span><h2>Thank you. We’ll be in touch.</h2><p>Your reference is <strong>#{reference}</strong>. Keep it for your records.</p><p>Your request has been recorded. The team will contact you to confirm the appointment and next steps.</p><div className="actions" style={{ justifyContent: "center" }}><Link href="/" className="button buttonPrimary">Back to Tripple S</Link><a href={whatsapp} className="button buttonLight">Contact the clinic</a></div></div> :
+      {submitted ? <div className="formCard confirm confirmEditorial"><span className="confirmIcon">✦</span><span className="kicker">Request received</span><h2>Thank you. We’ll be in touch.</h2><p>Your reference is <strong>#{reference}</strong>. Keep it for your records.</p><p>Your appointment request has been recorded. It is not yet a confirmed appointment; the team will review your requested time and contact you.</p>{submittedSummary && <div className="selectedTreatment"><div><span className="kicker">Your request summary</span><strong>{submittedSummary.serviceName}</strong><p>{submittedSummary.date ? new Date(submittedSummary.date + "T12:00:00").toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : "Date to be agreed"} · {submittedSummary.time}</p><p>{submittedSummary.duration}</p></div><div className="selectedTreatmentPrice"><strong>{submittedSummary.price}</strong><span>Estimated price</span></div></div>}<p>You can send these details to Tripple S on WhatsApp so the team can follow up in the same conversation.</p><div className="actions" style={{ justifyContent: "center" }}><a href={bookingWhatsApp} target="_blank" rel="noopener noreferrer" className="button buttonPrimary">Continue on WhatsApp →</a><Link href="/" className="button buttonLight">Back to Tripple S</Link></div></div> :
       <div className="bookingLayout">
         <form className="formCard bookingForm" onSubmit={handleSubmit}>
           <section className="bookingFormSection"><div className="bookingSectionHeading"><span>01</span><div><h2>How can we reach you?</h2><p>Just the essentials to get your request to the right person.</p></div></div>
