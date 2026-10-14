@@ -50,9 +50,9 @@ export default function BookForm() {
 
   useEffect(() => {
     setSelectedTime(""); setAvailableSlots([]); setAvailabilityError(""); setAvailabilityNote("");
-    if (!preferredDate) return;
+    if (!preferredDate) { setLoadingSlots(false); return; }
     let cancelled = false; setLoadingSlots(true);
-    fetch("/api/availability?date=" + encodeURIComponent(preferredDate) + "&duration=" + encodeURIComponent(selectedDuration))
+    fetch("/api/availability?date=" + encodeURIComponent(preferredDate) + "&duration=" + encodeURIComponent(selectedDuration), { cache: "no-store" })
       .then(async response => { const data=await response.json(); if(!response.ok) throw new Error(data.error||"Could not load available times."); return data as {slots:string[];note?:string}; })
       .then(data=>{if(!cancelled){setAvailableSlots(data.slots||[]);setAvailabilityNote(data.note||"");}})
       .catch(error=>{if(!cancelled)setAvailabilityError(error instanceof Error?error.message:"Could not load available times.");})
@@ -110,7 +110,10 @@ export default function BookForm() {
     try {
       const response = await fetch("/api/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...request, time: selectedTime, discountCode }) });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "The appointment request could not be saved.");
+      if (!response.ok) {
+        if (response.status === 409) { setSelectedTime(""); setAvailabilityRetry(value => value + 1); }
+        throw new Error(result.error || "The appointment request could not be saved.");
+      }
       const requestReference = String(result.reference || result.id).slice(0, 8).toUpperCase();
       setReference(requestReference);
       setSubmittedSummary({ name: request.name, serviceName: request.serviceNameSnapshot, date: requestedDate, time: preferredTime, price: String(result.finalPrice || service?.price || "To be confirmed with the team"), duration: service?.duration || "To be confirmed" });
@@ -151,7 +154,7 @@ export default function BookForm() {
           <button className="button buttonPrimary bookingSubmit" type="submit" disabled={busy}>{busy ? "Sending your request…" : "Send appointment request"} <span aria-hidden="true">→</span></button>
           <p className="bookingPrivacy">Your details are used to respond to this request. Please do not enter sensitive medical information in this form.</p>
         </form>
-        <aside className="bookingAside"><div className="bookingAsideImage"><span className="placeholderMonogram">S</span><span className="placeholderLabel">CLINIC PHOTOGRAPHY PLACEHOLDER</span></div><div className="bookingAsideContent"><span className="kicker">A clear next step</span><h3>We’ll confirm with you personally.</h3><ol><li>Your request reaches the Tripple S team.</li><li>The team reviews your preferred treatment and timing.</li><li>You are contacted to confirm the appointment details.</li></ol><p>Sending a request does not confirm a booking or payment.</p><div className="asideContact"><strong>Visit us</strong><span>Plot 943, Kaunda Road, Gaborone</span><span>Hours and appointment-only days are managed by the clinic.</span></div><a href={whatsapp} className="textLink">Need help? Contact the clinic →</a></div></aside>
+        <aside className="bookingAside"><div className="bookingAsideImage"><span className="placeholderMonogram">S</span><span className="placeholderLabel">CLINIC PHOTOGRAPHY PLACEHOLDER</span></div><div className="bookingAsideContent"><span className="kicker">A clear next step</span><h3>We’ll confirm with you personally.</h3><div className="selectedTreatment"><div><span className="kicker">Your request summary</span><strong>{selected?.name || "Treatment to be discussed"}</strong><p>{preferredDate ? new Date(preferredDate + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" }) : "Choose an appointment date"} · {selectedTime || "Choose an available time"}</p><p>{selected?.duration || "Duration to be confirmed"}</p></div><div className="selectedTreatmentPrice"><strong>{selected?.price || "To be confirmed"}</strong><span>{selected ? "Published price" : "Estimated price"}</span></div></div><ol><li>Your request reaches the Tripple S team.</li><li>The team reviews your preferred treatment and timing.</li><li>You are contacted to confirm the appointment details.</li></ol><p>Sending a request does not confirm a booking or payment.</p><div className="asideContact"><strong>Visit us</strong><span>Plot 943, Kaunda Road, Gaborone</span><span>Hours and appointment-only days are managed by the clinic.</span></div><a href={whatsapp} className="textLink">Need help? Contact the clinic →</a></div></aside>
       </div>}
     </div>
   </main>;
