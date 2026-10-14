@@ -112,7 +112,6 @@ export default function BookForm() {
     } catch (err) {
       console.error("[Tripple S] appointment request failed", err);
       setError(err instanceof Error ? err.message : "We could not record your request. Please try again.");
-    }
     } finally {
       setBusy(false);
     }
