@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { getIdToken, onAuthStateChanged, type User } from "firebase/auth";
-import { getToken } from "firebase/messaging";
+import { getToken, onMessage } from "firebase/messaging";
 import { auth } from "@/lib/firebase/client";
 import { getMessagingInstance } from "@/lib/firebase/notifications";
 const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY || "";
@@ -23,6 +23,22 @@ export default function NotificationSettings() {
    try{await load(user);}catch(error){setMessage(error instanceof Error?error.message:"Notification preferences could not be loaded.");}
   });
  },[load]);
+ useEffect(()=>{
+  let unsubscribeMessage:(()=>void)|undefined;let cancelled=false;
+  void (async()=>{
+   try{
+    if(!uid||typeof window==="undefined"||!("Notification" in window)||Notification.permission!=="granted")return;
+    const messaging=await getMessagingInstance();if(cancelled)return;
+    unsubscribeMessage=onMessage(messaging,payload=>{
+     const title=payload.notification?.title||"Tripple S update";
+     const body=payload.notification?.body||"Open My Tripple S to review your appointment.";
+     const link=payload.fcmOptions?.link||payload.data?.link||"/account";
+     void navigator.serviceWorker.ready.then(registration=>registration.showNotification(title,{body,icon:"/icon.svg",badge:"/icon.svg",data:{link}})).catch(error=>console.warn("[Tripple S] foreground notification display unavailable",error));
+    });
+   }catch(error){console.warn("[Tripple S] foreground notifications unavailable",error);}
+  })();
+  return()=>{cancelled=true;unsubscribeMessage?.();};
+ },[uid,permission]);
  async function savePreferences(next:Preferences) {
   const user=auth.currentUser;if(!user)return;setBusy(true);setMessage("");
   try{
