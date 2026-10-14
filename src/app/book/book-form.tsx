@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { getIdToken, signInAnonymously } from "firebase/auth";
+import { auth, hasFirebaseWebConfig } from "@/lib/firebase/client";
 import type { FormEvent } from "react";
 import { getClinicSettings, getPublicServices, type ServiceRecord } from "@/lib/firebase/data";
 import { defaultClinicSettings, dayLabels, isAnnouncementVisible, type ClinicSettings, type DayKey } from "@/lib/tripple-s/clinic-settings";
@@ -103,10 +105,13 @@ export default function BookForm() {
     }
 
     try {
-      const response = await fetch("/api/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...request, time: selectedTime, discountCode }) });
+      const headers: Record<string,string>={"Content-Type":"application/json"};
+      // Anonymous identity is invisible and optional; auth failure must not block guest booking.
+      if(hasFirebaseWebConfig){try{const customer=auth.currentUser??(await signInAnonymously(auth)).user;headers.Authorization="Bearer "+await getIdToken(customer);}catch(authError){console.warn("[Tripple S] optional customer session unavailable; continuing as guest",authError);}}
+      const response = await fetch("/api/bookings", { method: "POST", headers, body: JSON.stringify({ ...request, time: selectedTime, discountCode }) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "The appointment request could not be saved.");
-      setReference(String(result.id).slice(0, 8).toUpperCase());
+      setReference(String(result.reference || result.id).slice(0, 8).toUpperCase());
       setSubmitted(true);
       formElement.reset();
     } catch (err) {
@@ -122,7 +127,7 @@ export default function BookForm() {
     {showAnnouncement && <div className="container publicAnnouncement" role="status"><strong>{clinicSettings.announcement.title || "Clinic notice"}</strong><span>{clinicSettings.announcement.message}</span></div>}
     <div className="bookingIntro"><div className="bookingIntroInner"><span className="kicker">Your Tripple S visit</span><h1>A few details. <em>We’ll take it from here.</em></h1><p>Tell us how to reach you and what you have in mind. You can choose a treatment or ask the clinical team to guide you.</p><div className="bookingSteps"><span><b>01</b> Your details</span><span><b>02</b> Your preferences</span><span><b>03</b> We confirm with you</span></div></div></div>
     <div className="formWrap formWrapWide">
-      {submitted ? <div className="formCard confirm confirmEditorial"><span className="confirmIcon">✦</span><span className="kicker">Request received</span><h2>Thank you. We’ll be in touch.</h2><p>Your reference is <strong>#{reference}</strong>. Keep it for your records.</p><p>Your request has been recorded. The team will contact you to confirm the appointment and next steps.</p><div className="actions" style={{ justifyContent: "center" }}><Link href="/" className="button buttonPrimary">Back to Tripple S</Link><a href={whatsapp} className="button buttonLight">Contact the clinic</a></div></div> :
+      {submitted ? <div className="formCard confirm confirmEditorial"><span className="confirmIcon">✦</span><span className="kicker">Request received</span><h2>Thank you. We’ll be in touch.</h2><p>Your reference is <strong>#{reference}</strong>. Keep it for your records.</p><p>Your request has been recorded. The team will contact you to confirm the appointment and next steps.</p><div className="actions" style={{ justifyContent: "center" }}><Link href="/account" className="button buttonPrimary">Continue to My Tripple S →</Link><Link href="/" className="button buttonLight">Back to Tripple S</Link></div></div> :
       <div className="bookingLayout">
         <form className="formCard bookingForm" onSubmit={handleSubmit}>
           <section className="bookingFormSection"><div className="bookingSectionHeading"><span>01</span><div><h2>How can we reach you?</h2><p>Just the essentials to get your request to the right person.</p></div></div>

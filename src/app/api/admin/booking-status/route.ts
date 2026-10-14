@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminDb, requireAdmin } from "@/lib/firebase/admin";
+import { getAdminDb, getAdminMessaging, requireAdmin } from "@/lib/firebase/admin";
 const allowed = new Set(["NEW","REVIEWING","APPROVED","PAYMENT_PENDING","CONFIRMED","ARRIVED","COMPLETED","NEEDS_CONTACT","DECLINED","RESCHEDULED","CANCELLED","NO_SHOW","FOLLOW_UP"]);
 export async function POST(request:NextRequest){
  if(!await requireAdmin(request))return NextResponse.json({error:"Sign in with an authorized staff account."},{status:401});
@@ -14,6 +14,14 @@ export async function POST(request:NextRequest){
    tx.update(ref,{status});
    if(held)held.docs.forEach(item=>tx.delete(item.ref));
   });
+  if(customerUid){try{
+   const [preferences,tokens]=await Promise.all([db.collection("notificationPreferences").doc(customerUid).get(),db.collection("notificationTokens").doc(customerUid).collection("devices").get()]);
+   if(preferences.data()?.enabled===true&&preferences.data()?.appointmentUpdates!==false&&tokens.size){
+    const copy:Record<string,string>={NEW:"Your appointment request has been received.",REVIEWING:"The Tripple S team is reviewing your request.",APPROVED:"Your request has been reviewed. Check My Tripple S for next steps.",PAYMENT_PENDING:"There are next steps for your Tripple S request. Check My Tripple S.",CONFIRMED:"Your appointment has been confirmed by Tripple S.",ARRIVED:"Your visit has been checked in.",COMPLETED:"Your Tripple S visit has been marked complete.",NEEDS_CONTACT:"The Tripple S team needs to contact you about your request.",DECLINED:"Your appointment request was declined. Check My Tripple S for the latest status.",RESCHEDULED:"Your requested appointment time needs to be changed.",CANCELLED:"Your appointment request has been cancelled.",NO_SHOW:"Your appointment was marked as missed. Check My Tripple S for details.",FOLLOW_UP:"There is a follow-up update from Tripple S."};
+    const link=new URL("/account",process.env.NEXT_PUBLIC_BASE_URL||"https://tripple-s-wellness-spa.vercel.app").toString();
+    await Promise.all(tokens.docs.map(async item=>{const token=String(item.data().token??"");if(!token)return;try{await getAdminMessaging().send({token,notification:{title:"Tripple S appointment update",body:copy[status]||"Your appointment request status changed."},webpush:{fcmOptions:{link}}});}catch(error){console.error("[Tripple S] status push failed",error instanceof Error?error.message:"unknown");}}));
+   }
+  }catch(error){console.error("[Tripple S] status notification setup unavailable",error instanceof Error?error.message:"unknown");}}
   return NextResponse.json({ok:true});
  }catch(error){const message=error instanceof Error?error.message:"";return NextResponse.json({error:message==="REQUEST_NOT_FOUND"?"That booking request no longer exists.":"Request status could not be updated."},{status:message==="REQUEST_NOT_FOUND"?404:500});}
 }

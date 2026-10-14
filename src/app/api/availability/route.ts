@@ -24,9 +24,13 @@ export async function GET(request: NextRequest) {
     const distance = Math.round((new Date(date + "T00:00:00+02:00").getTime() - new Date(today + "T00:00:00+02:00").getTime()) / 86400000);
     if (distance < 0 || distance > settings.bookingRules.advanceBookingDays) return NextResponse.json({ slots: [], note: "Choose a date within the booking window." });
     const [reservations, appointments, requests] = await Promise.all([db.collection("slotReservations").where("date", "==", date).get(), db.collection("appointments").where("date", "==", date).get(), db.collection("bookingRequests").where("preferredDate", "==", date).get()]);
-    const occupied = new Set(reservations.docs.map((item) => String(item.data().time)));
-    const events = appointments.docs.map((item) => item.data()).filter((item) => item.status !== "CANCELLED");
-    const heldRequests = requests.docs.map((item) => item.data()).filter((item) => item.status !== "CANCELLED" && item.status !== "DECLINED" && item.status !== "RESCHEDULED" && typeof item.preferredTime === "string");
+    const events = appointments.docs.map((item) => ({ id: item.id, ...item.data() })).filter((item) => item.status !== "CANCELLED");
+    const heldRequestDocs = requests.docs.filter((item) => !["CANCELLED", "DECLINED", "RESCHEDULED"].includes(String(item.data().status ?? "")) && typeof item.data().preferredTime === "string");
+    const heldRequests = heldRequestDocs.map((item) => item.data());
+    const activeRequestIds = new Set(heldRequestDocs.map((item) => item.id));
+    const activeAppointmentIds = new Set(events.map((item) => item.id));
+    // Only linked active records may occupy a slot; orphaned test/cancelled locks are stale.
+    const occupied = new Set(reservations.docs.filter((item) => { const data=item.data(); if(data.bookingRequestId)return activeRequestIds.has(String(data.bookingRequestId)); if(data.appointmentId)return activeAppointmentIds.has(String(data.appointmentId)); return false; }).map((item) => String(item.data().time)));
     const interval = Math.max(15, Math.min(60, Number(settings.bookingRules.slotIntervalMinutes) || 15));
     const minimum = Date.now() + Math.max(0, Number(settings.bookingRules.minimumNoticeHours) || 0) * 3600000;
     const buffer = Math.max(0, Number(settings.bookingRules.bufferMinutes) || 0);

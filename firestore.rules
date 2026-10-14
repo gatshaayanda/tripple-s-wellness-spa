@@ -33,6 +33,15 @@ service cloud.firestore {
       allow create: if false;
     }
 
+    match /notificationPreferences/{uid} {
+      allow read, create, update: if isSignedIn() && request.auth.uid == uid;
+      allow delete: if false;
+    }
+
+    match /notificationTokens/{uid}/devices/{deviceId} {
+      allow read, create, update, delete: if isSignedIn() && request.auth.uid == uid;
+    }
+
     match /clients/{clientId} {
       allow read, write: if isAdmin();
     }
