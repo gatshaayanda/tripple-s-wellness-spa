@@ -48,16 +48,26 @@ export default function NotificationSettings() {
   }catch(error){setMessage(error instanceof Error?error.message:"Notifications could not be enabled.");}finally{setBusy(false);}
  }
  async function test() {
-  const user=auth.currentUser;if(!user)return;setBusy(true);setMessage("");
-  try{const response=await fetch("/api/notifications/test",{method:"POST",headers:{Authorization:"Bearer "+await getIdToken(user,true)}});const result=await response.json() as {error?:string;sent?:boolean};if(!response.ok||!result.sent)throw new Error(result.error||"The test notification could not be sent.");setMessage("The push service accepted the test. Check this device's notification shade; that response does not guarantee the operating system displayed it.");}
-  catch(error){setMessage(error instanceof Error?error.message:"The test notification failed.");}finally{setBusy(false);}
+  const user=auth.currentUser;if(!user)return;
+  if(!vapidKey){setMessage("Push is not configured on this deployment yet.");return;}
+  setBusy(true);setMessage("");
+  try{
+   if(!("Notification" in window)||Notification.permission!=="granted")throw new Error("Enable notifications on this device first.");
+   const messaging=await getMessagingInstance(),registration=await navigator.serviceWorker.ready;
+   const deviceToken=await getToken(messaging,{vapidKey,serviceWorkerRegistration:registration});
+   if(!deviceToken)throw new Error("This device is not registered for Tripple S notifications yet.");
+   const response=await fetch("/api/notifications/test",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+await getIdToken(user,true)},body:JSON.stringify({deviceToken})});
+   const result=await response.json() as {error?:string;sent?:boolean};
+   if(!response.ok||!result.sent)throw new Error(result.error||"The test notification could not be sent.");
+   setMessage("The push service accepted the test for this device. Check the notification shade; this response does not guarantee OS display.");
+  }catch(error){setMessage(error instanceof Error?error.message:"The test notification failed.");}finally{setBusy(false);}
  }
  return <section className="notificationSettings">
-  <div className="panelHeading"><div><span className="kicker">YOUR PREFERENCES</span><h2>Notifications</h2></div><span className="orderTruth">{registered&&prefs.enabled?"This device is registered":permission==="denied"?"Blocked by browser/device":"Optional"}</span></div>
+  <div className="panelHeading"><div><span className="kicker">YOUR PREFERENCES</span><h2>Notifications</h2></div><span className="orderTruth">{registered&&prefs.enabled?"Push is enabled on this account":permission==="denied"?"Blocked by browser/device":"Optional"}</span></div>
   <p>Choose useful updates after your request is saved. You can always check request status here, even when push notifications are unavailable.</p>
   <label className="notificationPreference"><input type="checkbox" checked={prefs.appointmentUpdates} disabled={busy||!uid} onChange={event=>void savePreferences({...prefs,appointmentUpdates:event.target.checked})}/><span><strong>Appointment updates</strong><small>Let this device receive supported changes to your request status.</small></span></label>
   <label className="notificationPreference"><input type="checkbox" checked={prefs.offersAndNews} disabled={busy||!uid} onChange={event=>void savePreferences({...prefs,offersAndNews:event.target.checked})}/><span><strong>Published offers & clinic news</strong><small>Optional updates only when the clinic publishes relevant information.</small></span></label>
-  {!vapidKey?<p className="notificationSetupNote">Push setup is not complete on this deployment. These preferences can be saved, but no system notifications will be sent until the clinic's Firebase Web Push key is configured.</p>:!registered||!prefs.enabled?<button type="button" className="button buttonPrimary" disabled={busy||!uid} onClick={()=>void enable()}>{busy?"Setting up…":permission==="denied"?"Check browser permission":"Enable notifications on this device"}</button>:<button type="button" className="button buttonLight" disabled={busy} onClick={()=>void test()}>{busy?"Sending test…":"Send a test notification"}</button>}
+  {!vapidKey?<p className="notificationSetupNote">Push setup is not complete on this deployment. These preferences can be saved, but system notifications will not be sent until the clinic's Firebase Web Push key is configured.</p>:<div className="actions"><button type="button" className="button buttonPrimary" disabled={busy||!uid} onClick={()=>void enable()}>{busy?"Setting up…":"Enable notifications on this device"}</button><button type="button" className="button buttonLight" disabled={busy||!uid} onClick={()=>void test()}>{busy?"Checking…":"Send a test to this device"}</button></div>}
   {message&&<p className="notice" role="status">{message}</p>}
  </section>;
 }
