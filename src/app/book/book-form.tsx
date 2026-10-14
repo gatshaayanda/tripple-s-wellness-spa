@@ -6,7 +6,6 @@ import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { getClinicSettings, getPublicServices, type ServiceRecord } from "@/lib/firebase/data";
 import { defaultClinicSettings, dayLabels, isAnnouncementVisible, type ClinicSettings, type DayKey } from "@/lib/tripple-s/clinic-settings";
-import { getLocalDemoBucket, getLocalDemoRecords, makeLocalDemoId, saveLocalDemoRecord } from "@/lib/tripple-s/local-demo";
 
 const whatsapp = "https://wa.me/26774866703?text=Hello%20Tripple%20S%2C%20I%27d%20like%20to%20enquire.";
 function localDateValue() {
@@ -29,8 +28,6 @@ export default function BookForm() {
   const [loadingServices, setLoadingServices] = useState(true);
   const [submitted, setSubmitted] = useState(false);
   const [reference, setReference] = useState("");
-  const [localDemoSubmission, setLocalDemoSubmission] = useState(false);
-  const [localDemoMode, setLocalDemoMode] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [clientType, setClientType] = useState<"NEW" | "RETURNING">("NEW");
@@ -55,7 +52,7 @@ export default function BookForm() {
     let cancelled = false; setLoadingSlots(true);
     fetch("/api/availability?date=" + encodeURIComponent(preferredDate) + "&duration=" + encodeURIComponent(selectedDuration))
       .then(async response => { const data=await response.json(); if(!response.ok) throw new Error(data.error||"Could not load available times."); return data as {slots:string[];note?:string}; })
-      .then(data=>{if(!cancelled){setLocalDemoMode(false);setAvailableSlots(data.slots||[]);setAvailabilityNote(data.note||"");}})
+      .then(data=>{if(!cancelled){setAvailableSlots(data.slots||[]);setAvailabilityNote(data.note||"");}})
       .catch(error=>{if(!cancelled)setAvailabilityError(error instanceof Error?error.message:"Could not load available times.");})
       .finally(()=>{if(!cancelled)setLoadingSlots(false);});
     return ()=>{cancelled=true;};
@@ -64,31 +61,6 @@ export default function BookForm() {
   const selectedDay = preferredDate ? dayKeys[new Date(`${preferredDate}T12:00:00`).getDay()] : null;
   const selectedHours = selectedDay ? clinicSettings.openingHours[selectedDay] : undefined;
   const showAnnouncement = isAnnouncementVisible(clinicSettings);
-
-  function enableLocalDemoCalendar() {
-    if (!preferredDate) { setAvailabilityError("Choose a date first."); return; }
-    const dayKey = dayKeys[new Date(preferredDate + "T12:00:00").getDay()];
-    const hours = clinicSettings.openingHours[dayKey];
-    if (!hours?.open) { setAvailableSlots([]); setAvailabilityNote(dayKey === "sunday" ? "Sunday is appointment-only. No demo hours are configured for this date." : "The clinic is not accepting requests on this date."); setAvailabilityError(""); setLocalDemoMode(true); return; }
-    const toMinutes = (value: string) => Number(value.slice(0, 2)) * 60 + Number(value.slice(3, 5));
-    const toClock = (value: number) => String(Math.floor(value / 60)).padStart(2, "0") + ":" + String(value % 60).padStart(2, "0");
-    const occupied = getLocalDemoRecords<{ id: string; preferredDate?: string; preferredTime?: string; durationSnapshot?: string; status?: string }>().filter(item => item.preferredDate === preferredDate && item.preferredTime && !["CANCELLED", "DECLINED", "RESCHEDULED"].includes(String(item.status)));
-    const calendarEntries = getLocalDemoBucket<{ id: string; date: string; startTime: string; endTime: string; kind: string }>("calendar").filter(item => item.date === preferredDate);
-    const interval = Math.max(15, Number(clinicSettings.bookingRules.slotIntervalMinutes) || 15);
-    const duration = Math.max(15, Number(selectedDuration) || 30);
-    const today = new Date(Date.now() + 2 * 3600000).toISOString().slice(0, 10);
-    const distance = Math.round((new Date(preferredDate + "T00:00:00+02:00").getTime() - new Date(today + "T00:00:00+02:00").getTime()) / 86400000);
-    const slots: string[] = [];
-    if (distance < 0 || distance > clinicSettings.bookingRules.advanceBookingDays) { setAvailableSlots([]); setSelectedTime(""); setAvailabilityError(""); setAvailabilityNote("Choose a date within the configured booking window."); setLocalDemoMode(true); return; }
-    for (let start = toMinutes(hours.start); start + duration <= toMinutes(hours.end); start += interval) {
-      const slotInstant = new Date(preferredDate + "T" + toClock(start) + ":00+02:00").getTime();
-      if (slotInstant < Date.now() + Math.max(0, Number(clinicSettings.bookingRules.minimumNoticeHours) || 0) * 3600000) continue;
-      const requestOverlap = occupied.some(item => { const existingStart = toMinutes(String(item.preferredTime)); const existingDuration = Math.max(15, Number(String(item.durationSnapshot || "30").match(/\d+/)?.[0] || 30)); return start < existingStart + existingDuration && start + duration > existingStart; });
-      const calendarOverlap = calendarEntries.some(item => start < toMinutes(item.endTime) && start + duration > toMinutes(item.startTime));
-      if (!requestOverlap && !calendarOverlap) slots.push(toClock(start));
-    }
-    setAvailableSlots(slots); setSelectedTime(""); setAvailabilityError(""); setAvailabilityNote("Local demo calendar: sample times only. This browser cannot verify the clinic live schedule."); setLocalDemoMode(true);
-  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -130,31 +102,17 @@ export default function BookForm() {
       return;
     }
 
-    let allowLocalFallback = false;
     try {
-      if (localDemoMode) {
-        const id = makeLocalDemoId();
-        saveLocalDemoRecord({ id, createdAt: new Date().toISOString(), requestType: "APPOINTMENT", name: request.name, phone: request.phone, ...(request.email ? { email: request.email } : {}), ...(request.serviceId ? { serviceId: request.serviceId } : {}), serviceNameSnapshot: request.serviceNameSnapshot, ...(request.priceSnapshot ? { priceSnapshot: request.priceSnapshot } : {}), ...(request.durationSnapshot ? { durationSnapshot: request.durationSnapshot } : {}), preferredDate: requestedDate, preferredTime, clientType, status: "NEW", paymentStatus: "PAYMENT_PENDING", ...(message ? { message } : {}), localOnly: true });
-        setReference(id.slice(-6).toUpperCase()); setLocalDemoSubmission(true); setSubmitted(true); formElement.reset(); return;
-      }
       const response = await fetch("/api/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...request, time: selectedTime, discountCode }) });
       const result = await response.json();
-      if (!response.ok) { allowLocalFallback = response.status >= 500; throw new Error(result.error || "The appointment request could not be saved."); }
+      if (!response.ok) throw new Error(result.error || "The appointment request could not be saved.");
       setReference(String(result.id).slice(0, 8).toUpperCase());
-      setLocalDemoSubmission(false);
       setSubmitted(true);
       formElement.reset();
     } catch (err) {
       console.error("[Tripple S] appointment request failed", err);
-      if (!(allowLocalFallback || err instanceof TypeError)) {
-        setError(err instanceof Error ? err.message : "We could not record your request. Please try again.");
-      } else try {
-        const id = makeLocalDemoId();
-        saveLocalDemoRecord({ id, createdAt: new Date().toISOString(), requestType: "APPOINTMENT", name: request.name, phone: request.phone, ...(request.email ? { email: request.email } : {}), ...(request.serviceId ? { serviceId: request.serviceId } : {}), serviceNameSnapshot: request.serviceNameSnapshot, ...(request.priceSnapshot ? { priceSnapshot: request.priceSnapshot } : {}), ...(request.durationSnapshot ? { durationSnapshot: request.durationSnapshot } : {}), preferredDate: requestedDate, preferredTime, clientType, status: "NEW", paymentStatus: "PAYMENT_PENDING", ...(message ? { message } : {}), localOnly: true });
-        setReference(id.slice(-6).toUpperCase()); setLocalDemoSubmission(true); setSubmitted(true); formElement.reset();
-      } catch {
-        setError(err instanceof Error ? err.message : "We could not record your request. Please try again.");
-      }
+      setError(err instanceof Error ? err.message : "We could not record your request. Please try again.");
+    }
     } finally {
       setBusy(false);
     }
@@ -165,7 +123,7 @@ export default function BookForm() {
     {showAnnouncement && <div className="container publicAnnouncement" role="status"><strong>{clinicSettings.announcement.title || "Clinic notice"}</strong><span>{clinicSettings.announcement.message}</span></div>}
     <div className="bookingIntro"><div className="bookingIntroInner"><span className="kicker">Your Tripple S visit</span><h1>A few details. <em>We’ll take it from here.</em></h1><p>Tell us how to reach you and what you have in mind. You can choose a treatment or ask the clinical team to guide you.</p><div className="bookingSteps"><span><b>01</b> Your details</span><span><b>02</b> Your preferences</span><span><b>03</b> We confirm with you</span></div></div></div>
     <div className="formWrap formWrapWide">
-      {submitted ? <div className="formCard confirm confirmEditorial"><span className="confirmIcon">✦</span><span className="kicker">{localDemoSubmission ? "Saved on this device only" : "Request received"}</span><h2>{localDemoSubmission ? "Your request has not reached the clinic." : "Thank you. We’ll be in touch."}</h2><p>Your reference is <strong>#{reference}</strong>. Keep it for your records.</p><p>{localDemoSubmission ? "We could not reach the clinic service, so this request is stored in this browser only. It is not a booking, not a live slot reservation, and the team cannot see it. Please retry when online or contact Tripple S directly." : "Your selected slot is held while the team reviews your request. The team will contact you to confirm the appointment and next steps."}</p><div className="actions" style={{ justifyContent: "center" }}><Link href="/" className="button buttonPrimary">Back to Tripple S</Link><a href={whatsapp} className="button buttonLight">Contact the clinic</a></div></div> :
+      {submitted ? <div className="formCard confirm confirmEditorial"><span className="confirmIcon">✦</span><span className="kicker">Request received</span><h2>Thank you. We’ll be in touch.</h2><p>Your reference is <strong>#{reference}</strong>. Keep it for your records.</p><p>Your request has been recorded. The team will contact you to confirm the appointment and next steps.</p><div className="actions" style={{ justifyContent: "center" }}><Link href="/" className="button buttonPrimary">Back to Tripple S</Link><a href={whatsapp} className="button buttonLight">Contact the clinic</a></div></div> :
       <div className="bookingLayout">
         <form className="formCard bookingForm" onSubmit={handleSubmit}>
           <section className="bookingFormSection"><div className="bookingSectionHeading"><span>01</span><div><h2>How can we reach you?</h2><p>Just the essentials to get your request to the right person.</p></div></div>
@@ -181,7 +139,7 @@ export default function BookForm() {
             {selected && <div className="selectedTreatment"><div><span className="kicker">Your selection</span><strong>{selected.name}</strong><p>{selected.description}</p></div><div className="selectedTreatmentPrice"><strong>{selected.price}</strong><span>{selected.duration}</span></div>{selected.consultationRequired && <p className="selectedTreatmentNote">Clinical assessment may be required. Suitability is determined by the Tripple S clinical team.</p>}</div>}
           </section>
           <section className="bookingFormSection"><div className="bookingSectionHeading"><span>03</span><div><h2>When works for you?</h2><p>Choose an available slot. The team will confirm your appointment after reviewing the request.</p></div></div>
-            <div className="formGrid"><div className="field"><label htmlFor="date">Appointment date</label><input id="date" name="date" type="date" min={minDate} value={preferredDate} onChange={event=>setPreferredDate(event.target.value)} required/><small>{selectedHours?.open ? (selectedDay ? dayLabels[selectedDay] : "") + " · Operating hours " + selectedHours.start + "–" + selectedHours.end + ". " : selectedDay ? "The clinic is not accepting requests on " + dayLabels[selectedDay] + ". " : ""}{localDemoMode ? "Local demo times only; not checked against the clinic." : "Times below are checked against the live calendar."}</small></div><div className="field fieldFull"><label>Available appointment times</label>{!preferredDate?<p className="slotHint">Choose a date to check the calendar.</p>:loadingSlots?<p className="slotHint">Checking the live calendar…</p>:availabilityError?<div className="slotError" role="alert"><p>{availabilityError}</p><p>We will not show unverified times as live availability. Your appointment has not been booked.</p><div className="actions"><button type="button" className="button buttonLight" onClick={()=>setAvailabilityRetry(value=>value+1)}>Try checking again</button><button type="button" className="button buttonDark" onClick={enableLocalDemoCalendar}>Use local demo calendar</button></div></div>:availableSlots.length===0?<p className="slotHint">{availabilityNote || "No available times were found for this date. Try another day."}</p>:<><p className="slotHint">{localDemoMode ? "Local demo mode. Times are generated from sample clinic hours and this browser’s demo records only. " : "Choose a time below. A slot may be taken by another request before you submit; the calendar is checked again when you send your request."}{availabilityNote ? " " + availabilityNote : ""}</p><div className="slotGrid" role="group" aria-label="Available appointment times">{availableSlots.map(time=><button key={time} type="button" className={selectedTime===time?"slotButton selected":"slotButton"} aria-pressed={selectedTime===time} onClick={()=>setSelectedTime(time)}>{time}</button>)}</div></>}</div><div className="field"><label htmlFor="discountCode">Offer code <span>(optional)</span></label><input id="discountCode" name="discountCode" autoComplete="off" placeholder="Enter a published offer code"/></div><div className="field fieldFull"><label htmlFor="message">Anything else we should know? <span>(optional)</span></label><textarea id="message" name="message" placeholder="Your goal, preferred timing or a question. Please do not include sensitive medical details here."/></div></div>
+            <div className="formGrid"><div className="field"><label htmlFor="date">Appointment date</label><input id="date" name="date" type="date" min={minDate} value={preferredDate} onChange={event=>setPreferredDate(event.target.value)} required/><small>{selectedHours?.open ? (selectedDay ? dayLabels[selectedDay] : "") + " · Operating hours " + selectedHours.start + "–" + selectedHours.end + ". " : selectedDay ? "The clinic is not accepting requests on " + dayLabels[selectedDay] + ". " : ""}Times below are checked against the live calendar.</small></div><div className="field fieldFull"><label>Available appointment times</label>{!preferredDate?<p className="slotHint">Choose a date to check the calendar.</p>:loadingSlots?<p className="slotHint">Checking the live calendar…</p>:availabilityError?<div className="slotError" role="alert"><p>{availabilityError}</p><p>We will not show unverified times as live availability. Your appointment has not been booked.</p><div className="actions"><button type="button" className="button buttonLight" onClick={()=>setAvailabilityRetry(value=>value+1)}>Try checking again</button></div></div>:availableSlots.length===0?<p className="slotHint">{availabilityNote || "No available times were found for this date. Try another day."}</p>:<><p className="slotHint">Choose a time below. A slot may be taken by another request before you submit; the calendar is checked again when you send your request. {availabilityNote ? " " + availabilityNote : ""}</p><div className="slotGrid" role="group" aria-label="Available appointment times">{availableSlots.map(time=><button key={time} type="button" className={selectedTime===time?"slotButton selected":"slotButton"} aria-pressed={selectedTime===time} onClick={()=>setSelectedTime(time)}>{time}</button>)}</div></>}</div><div className="field"><label htmlFor="discountCode">Offer code <span>(optional)</span></label><input id="discountCode" name="discountCode" autoComplete="off" placeholder="Enter a published offer code"/></div><div className="field fieldFull"><label htmlFor="message">Anything else we should know? <span>(optional)</span></label><textarea id="message" name="message" placeholder="Your goal, preferred timing or a question. Please do not include sensitive medical details here."/></div></div>
           </section>
           {error && <p className="bookingError" role="alert">{error}</p>}
           <button className="button buttonPrimary bookingSubmit" type="submit" disabled={busy}>{busy ? "Sending your request…" : "Send appointment request"} <span aria-hidden="true">→</span></button>
