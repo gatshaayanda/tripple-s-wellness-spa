@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { makeLocalDemoId, saveLocalDemoRecord } from "@/lib/tripple-s/local-demo";
 
 type EnquiryKind = "PRODUCT" | "TREATMENT" | "GENERAL";
 
@@ -15,10 +14,9 @@ export default function EnquiryModal({
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [reference, setReference] = useState("");
-  const [localOnly, setLocalOnly] = useState(false);
 
   useEffect(() => {
-    if (!open) { setBusy(false); setError(""); setSubmitted(false); setReference(""); setLocalOnly(false); }
+    if (!open) { setBusy(false); setError(""); setSubmitted(false); setReference(""); }
   }, [open]);
 
   useEffect(() => {
@@ -41,7 +39,6 @@ export default function EnquiryModal({
     if (busy) return;
     const form = new FormData(event.currentTarget);
     setBusy(true); setError("");
-    let allowLocalFallback = false;
     try {
       const response = await fetch("/api/enquiries", {
         method: "POST",
@@ -55,24 +52,12 @@ export default function EnquiryModal({
           website: String(form.get("website") ?? "").trim(),
         }),
       });
-      const result = await response.json();
-      if (!response.ok) { allowLocalFallback = response.status >= 500; throw new Error(result.error || "Your enquiry could not be sent. Please try again."); }
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || "Your enquiry could not be sent. Please try again.");
       setReference(String(result.reference || result.id || "").slice(0, 8).toUpperCase());
-      setLocalOnly(false);
       setSubmitted(true);
     } catch (err) {
-      if (!(allowLocalFallback || err instanceof TypeError)) {
-        setError(err instanceof Error ? err.message : "Your enquiry could not be sent. Please try again.");
-      } else try {
-        const id = makeLocalDemoId();
-        const requestType = kind === "PRODUCT" ? "PRODUCT_ENQUIRY" : kind === "TREATMENT" ? "TREATMENT_ENQUIRY" : "GENERAL_ENQUIRY";
-        saveLocalDemoRecord({ id, createdAt: new Date().toISOString(), requestType, name: String(form.get("name") ?? "").trim(), phone: String(form.get("phone") ?? "").trim(), email: String(form.get("email") ?? "").trim(), serviceNameSnapshot: itemName || (kind === "GENERAL" ? "General client enquiry" : "Client enquiry"), productId: kind === "PRODUCT" ? itemId : undefined, productNameSnapshot: kind === "PRODUCT" ? itemName : undefined, serviceId: kind === "TREATMENT" ? itemId : undefined, clientType: "NEW", status: "NEW", paymentStatus: "PAYMENT_PENDING", message: String(form.get("message") ?? "").trim(), localOnly: true });
-        setReference(id.slice(-6).toUpperCase());
-        setLocalOnly(true);
-        setSubmitted(true);
-      } catch {
-        setError(err instanceof Error ? err.message : "Your enquiry could not be sent. Please try again.");
-      }
+      setError(err instanceof Error ? err.message : "Your enquiry could not be sent. Please try again.");
     } finally { setBusy(false); }
   }
 
@@ -82,11 +67,11 @@ export default function EnquiryModal({
         <button className="enquiryClose" type="button" aria-label="Close enquiry" onClick={onClose} disabled={busy}>×</button>
         <span className="enquirySpark" aria-hidden="true">✦</span>
         <span className="kicker">TRIPPLE S · CLIENT CARE</span>
-        <h2 id="enquiry-title">{submitted ? localOnly ? "Your enquiry has not reached the team." : "Your enquiry is with the team." : heading}</h2>
-        <p id="enquiry-description">{submitted ? localOnly ? "This enquiry is saved on this device only. It has not been sent to Tripple S. Please retry when online or contact the clinic directly." : "Thank you. Keep this reference for your records. This is an enquiry receipt, not an appointment confirmation." : intro}</p>
+        <h2 id="enquiry-title">{submitted ? "Your enquiry is with the team." : heading}</h2>
+        <p id="enquiry-description">{submitted ? "Thank you. Keep this reference for your records. This is an enquiry receipt, not an appointment confirmation." : intro}</p>
         {itemName && <div className="enquiryItem"><strong>{itemName}</strong>{itemPrice && <span>{itemPrice}</span>}</div>}
         {submitted ? (
-          <div className="enquirySuccess" role="status"><span>{localOnly ? "!" : "✓"}</span><strong>{localOnly ? "Saved on this device" : "Enquiry received"}</strong>{reference && <small>Reference #{reference}</small>}{localOnly && <a className="button buttonLight" href="https://wa.me/26774866703?text=Hello%20Tripple%20S%2C%20I%20sent%20an%20enquiry%20through%20your%20app%20and%20would%20like%20to%20follow%20up.">Contact the clinic on WhatsApp</a>}<button className="button buttonPrimary" type="button" onClick={onClose}>Back to Tripple S</button></div>
+          <div className="enquirySuccess" role="status"><span>✓</span><strong>Enquiry received</strong>{reference && <small>Reference #{reference}</small>}<button className="button buttonPrimary" type="button" onClick={onClose}>Back to Tripple S</button></div>
         ) : (
           <form className="enquiryForm" onSubmit={submit}>
             <label>Your name<input name="name" autoComplete="name" required maxLength={120} placeholder="Full name" /></label>
@@ -94,7 +79,7 @@ export default function EnquiryModal({
             <label>Email <span>(optional)</span><input name="email" type="email" autoComplete="email" maxLength={200} placeholder="you@example.com" /></label>
             <label>Your question <span>(optional)</span><textarea name="message" maxLength={1000} placeholder={kind === "PRODUCT" ? "Ask about current availability or product details." : "What would you like the team to know?"} /></label>
             <div className="enquiryHoneypot" aria-hidden="true"><label>Website<input name="website" tabIndex={-1} autoComplete="off" /></label></div>
-            {error && <p className="enquiryError" role="alert">{error}</p>}
+            {error && <><p className="enquiryError" role="alert">{error} Your enquiry has not been recorded. You can retry or contact the clinic directly.</p><a className="button buttonLight" href="https://wa.me/26774866703?text=Hello%20Tripple%20S%2C%20I%27d%20like%20to%20enquire.">Contact the clinic on WhatsApp</a></>}
             <button className="button buttonPrimary enquirySubmit" type="submit" disabled={busy}>{busy ? "Sending enquiry…" : "Send enquiry"} <span aria-hidden="true">→</span></button>
             <small>Your details are used to respond to this enquiry. Please do not include sensitive medical information.</small>
           </form>
