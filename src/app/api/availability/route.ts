@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const db = getAdminDb();
     const settingsSnap = await db.collection("settings").doc("clinic").get();
     const saved = settingsSnap.data() ?? {};
-    const settings = { openingHours: { ...defaultClinicSettings.openingHours, ...(saved.openingHours ?? {}) }, bookingRules: { ...defaultClinicSettings.bookingRules, ...(saved.bookingRules ?? {}) } };
+    const settings = { openingHours: { ...defaultClinicSettings.openingHours, ...(saved.openingHours ?? {}) }, bookingRules: { ...defaultClinicSettings.bookingRules, ...(saved.bookingRules ?? {}), minimumNoticeHours: 0 } };
     settings.openingHours.sunday = { ...defaultClinicSettings.openingHours.sunday, ...(saved.openingHours?.sunday ?? {}), open: true, byAppointment: true };
     const dayKey = localDay(date);
     const day = settings.openingHours[dayKey];
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     // Only linked active records may occupy a slot; orphaned test/cancelled locks are stale.
     const occupied = new Set(reservations.docs.filter((item) => { const data=item.data(); if(data.bookingRequestId)return activeRequestIds.has(String(data.bookingRequestId)); if(data.appointmentId)return activeAppointmentIds.has(String(data.appointmentId)); return false; }).map((item) => String(item.data().time)));
     const interval = Math.max(15, Math.min(60, Number(settings.bookingRules.slotIntervalMinutes) || 15));
-    const minimum = Date.now() + Math.max(0, Number(settings.bookingRules.minimumNoticeHours) || 0) * 3600000;
+    const minimum = Date.now();
     const buffer = Math.max(0, Number(settings.bookingRules.bufferMinutes) || 0);
     const endLimit = minutes(day.end);
     const slots: string[] = [];

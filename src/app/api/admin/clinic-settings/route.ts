@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
 
   const settings = {
     openingHours: { ...defaultClinicSettings.openingHours, ...(body.openingHours ?? {}) },
-    bookingRules: { ...defaultClinicSettings.bookingRules, ...(body.bookingRules ?? {}) },
+    bookingRules: { ...defaultClinicSettings.bookingRules, ...(body.bookingRules ?? {}), minimumNoticeHours: 0 },
     announcement: { ...defaultClinicSettings.announcement, ...(body.announcement ?? {}) },
   };
   settings.openingHours.sunday = { ...settings.openingHours.sunday, open: true, byAppointment: true };

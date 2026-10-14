@@ -20,7 +20,7 @@ Notification preferences and device tokens are accessed through authenticated se
 
 ## Acceptance checklist
 
-- [ ] Earliest available time begins at the configured opening time, respecting the selected treatment duration, interval, minimum notice, active booking requests, and active calendar blocks.
+- [ ] Earliest available time begins at the configured opening time, respecting treatment duration, interval, active booking requests, and active calendar blocks. Past times are hidden automatically; a 24-hour notice rule does not delay the opening slots.
 - [ ] Orphaned reservations left by deleted or cancelled records do not suppress otherwise-open hours; active overlaps remain blocked at read and submit time.
 - [ ] A guest request still succeeds if optional Firebase Auth cannot initialize.
 - [ ] A request made with a verified Firebase identity appears only in that identity's private account history.
