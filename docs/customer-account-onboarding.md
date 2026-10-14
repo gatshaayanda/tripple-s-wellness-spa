@@ -8,6 +8,10 @@
 - Requests are not confirmations. Only staff-updated statuses can mark an appointment confirmed.
 - Offers shown in the account come from currently active clinic-published loyalty programmes. No points, balances, or benefits are invented.
 
+## Firebase Auth prerequisites
+
+In Firebase Console → Authentication → Sign-in method, enable **Anonymous** and **Google** providers and add the deployed Tripple S domain(s) to Authorized domains. The booking form remains guest-first if anonymous auth is unavailable, but saved request history and Google linking cannot be verified until the providers and domain are configured.
+
 ## Push prerequisites
 
 Push notifications are optional. Before enabling them in a deployment:
