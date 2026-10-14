@@ -183,6 +183,8 @@ Never:
 - carry over Meating Place Firebase IDs or data
 - weaken rules to hide permission errors
 
+Server-side Firebase Admin initialisation is isolated to the Tripple S project. `FIREBASE_ADMIN_KEY` may contain service-account JSON; alternatively, `FIREBASE_ADMIN_PROJECT_ID`, `FIREBASE_ADMIN_CLIENT_EMAIL`, and `FIREBASE_ADMIN_PRIVATE_KEY` may be supplied together. Availability and booking API failures must log a safe stage/code diagnostic without returning credentials or internal details to customers.
+
 Verify the active Firebase project before changing rules or data.
 
 ## Media / branding
