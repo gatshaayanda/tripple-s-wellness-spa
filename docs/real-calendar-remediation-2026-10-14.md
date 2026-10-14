@@ -16,7 +16,7 @@
 - Public booking only displays server-returned slots. Failed availability checks provide retry/contact options, never demo times.
 - Public booking/enquiry receipts appear only after a successful server response; failure leaves the form available to retry and clearly states the request was not recorded.
 - Owner can enter /admin with the server-only ADMIN_PASSWORD; server checks the password and returns a Firebase custom token only for an existing Firestore owner record. Staff retains email/password sign-in.
-- Removed the Admin local-demo bypass from the sign-in UI and clear its legacy browser flag before the Admin dashboard mounts.
+- Removed the Admin local-demo bypass from the sign-in UI, disabled local demo mode centrally, and clear legacy browser flags before Admin data components mount.
 - Added standing operating rules to AGENTS.md.
 
 ## Verification status

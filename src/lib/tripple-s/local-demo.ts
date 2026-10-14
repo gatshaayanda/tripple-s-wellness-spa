@@ -26,13 +26,14 @@ export type LocalDemoRecord = {
 };
 
 export function isLocalDemoMode(): boolean {
-  return typeof window !== "undefined" && window.localStorage.getItem(MODE_KEY) === "true";
+  // Local demo data must never substitute for the shared clinic system.
+  return false;
 }
 
 export function setLocalDemoMode(enabled: boolean): void {
-  if (typeof window === "undefined") return;
-  if (enabled) window.localStorage.setItem(MODE_KEY, "true");
-  else window.localStorage.removeItem(MODE_KEY);
+  // Clear legacy flags from older builds; demo mode is disabled in this app.
+  void enabled;
+  if (typeof window !== "undefined") window.localStorage.removeItem(MODE_KEY);
 }
 
 export function getLocalDemoRecords<T extends { id: string } = LocalDemoRecord>(): T[] {
