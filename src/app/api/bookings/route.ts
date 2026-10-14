@@ -23,8 +23,10 @@ export async function POST(request: NextRequest) {
   const code = String(body.discountCode ?? "").trim().toUpperCase();
   const parsedDate = new Date(date + "T12:00:00+02:00");
   if (!name || !phone || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== date || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return NextResponse.json({ error: "Enter your name and mobile number, then choose a valid date and available time." }, { status: 400 });
+  let stage = "firebase_admin_init";
   try {
     const db = getAdminDb();
+    stage = "clinic_settings_read";
     const settingsSnap = await db.collection("settings").doc("clinic").get();
     const saved = settingsSnap.data() ?? {};
     const settings = { openingHours: { ...defaultClinicSettings.openingHours, ...(saved.openingHours ?? {}) }, bookingRules: { ...defaultClinicSettings.bookingRules, ...(saved.bookingRules ?? {}) } };
@@ -37,6 +39,7 @@ export async function POST(request: NextRequest) {
     const distance = Math.round((new Date(date + "T00:00:00+02:00").getTime() - new Date(today + "T00:00:00+02:00").getTime()) / 86400000);
     if (distance < 0 || distance > settings.bookingRules.advanceBookingDays) return NextResponse.json({ error: "Choose a date within the booking window." }, { status: 409 });
     if (new Date(date + "T" + time + ":00+02:00").getTime() < Date.now() + Number(settings.bookingRules.minimumNoticeHours || 0) * 3600000) return NextResponse.json({ error: "That time is too soon to book. Choose a later slot." }, { status: 409 });
+    stage = "service_lookup";
     const serviceSnap = serviceId ? await db.collection("services").doc(serviceId).get() : null;
     const service: ServiceSeed | null = serviceSnap?.exists ? ({ id: serviceId, ...serviceSnap.data() } as ServiceSeed) : (trippleSServiceSeed.find((item) => item.id === serviceId) ?? null);
     if (serviceId && (!service || service.active === false)) return NextResponse.json({ error: "That treatment is no longer available. Please choose another." }, { status: 409 });
@@ -49,6 +52,7 @@ export async function POST(request: NextRequest) {
     const appointmentConflict=appointmentSnap.docs.some((item) => { const event=item.data(); return event.status!=="CANCELLED" && typeof event.startTime==="string" && typeof event.endTime==="string" && mins(time)<mins(event.endTime) && end+Number(settings.bookingRules.bufferMinutes||0)>mins(event.startTime); });
     const requestConflict=requestSnap.docs.some(item=>{const event=item.data();if(event.status==="DECLINED"||event.status==="CANCELLED"||event.status==="RESCHEDULED"||typeof event.preferredTime!=="string")return false;const start=mins(event.preferredTime);const duration=durationOf(String(event.durationSnapshot||"30 min"));return mins(time)<start+duration&&end+Number(settings.bookingRules.bufferMinutes||0)>start;});
     if (appointmentConflict||requestConflict) return NextResponse.json({ error: "That time has just become unavailable. Please choose another slot." }, { status: 409 });
+    stage = "discount_validation";
     let discount: Record<string, unknown> | null = null;
     if (code) {
       const programs = await db.collection("loyaltyPrograms").where("active", "==", true).get();
@@ -64,6 +68,7 @@ export async function POST(request: NextRequest) {
     const occupied: string[] = [];
     for (let minute=mins(time); minute<end+Number(settings.bookingRules.bufferMinutes||0); minute+=15) occupied.push(clock(minute));
     const reservationRefs = occupied.map((value) => db.collection("slotReservations").doc(slotId(date,value)));
+    stage = "reservation_transaction";
     await db.runTransaction(async (tx) => {
       const snapshots = await Promise.all(reservationRefs.map((ref) => tx.get(ref)));
       if (snapshots.some((snapshot) => snapshot.exists)) throw new Error("SLOT_TAKEN");
@@ -75,7 +80,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message=error instanceof Error?error.message:"";
     if (message==="SLOT_TAKEN") return NextResponse.json({error:"Someone has just taken that slot. Please choose another available time."},{status:409});
-    console.error("[Tripple S] booking save failed",message||"unknown");
+    const code = error && typeof error === "object" && "code" in error ? String((error as { code?: unknown }).code ?? "") : "";
+    console.error("[Tripple S] booking save failed",{stage,code,detail:message||"unknown"});
     return NextResponse.json({error:"We could not record the request. Please try again shortly."},{status:503});
   }
 }
