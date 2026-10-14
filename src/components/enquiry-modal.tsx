@@ -55,7 +55,6 @@ export default function EnquiryModal({
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Your enquiry could not be sent. Please try again.");
       setReference(String(result.reference || result.id || "").slice(0, 8).toUpperCase());
-      setLocalOnly(false);
       setSubmitted(true);
     } catch (err) {
       console.error("[Tripple S] enquiry submission failed", err);
