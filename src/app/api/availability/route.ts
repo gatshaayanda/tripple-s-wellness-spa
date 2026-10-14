@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       if (new Date(date + "T" + time + ":00+02:00").getTime() < minimum) continue;
       const busyEnd = start + duration + buffer;
       let blocked = false;
-      for (let minute = start; minute < busyEnd; minute += 15) if (occupied.has(clock(minute))) blocked = true;
+      for (let minute = Math.floor(start / 15) * 15; minute < busyEnd; minute += 15) if (occupied.has(clock(minute))) blocked = true;
       for (const event of events) if (typeof event.startTime === "string" && typeof event.endTime === "string" && start < minutes(event.endTime) && busyEnd > minutes(event.startTime)) blocked = true;
       for (const held of heldRequests) { const heldStart=minutes(String(held.preferredTime)); const heldDuration=Number(String(held.durationSnapshot||"30").match(/\d+/)?.[0]||30); if(start<heldStart+heldDuration&&busyEnd>heldStart)blocked=true; }
       if (!blocked) slots.push(time);
