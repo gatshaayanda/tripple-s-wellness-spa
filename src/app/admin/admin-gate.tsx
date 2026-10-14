@@ -4,13 +4,11 @@ import { onAuthStateChanged, signInWithEmailAndPassword, signOut, type User } fr
 import { doc, getDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { auth, db } from "@/lib/firebase/client";
-import { isLocalDemoMode, seedLocalDemoData, setLocalDemoMode } from "@/lib/tripple-s/local-demo";
 
 export default function AdminGate({ children }: { children: React.ReactNode }) {
   const [user,setUser]=useState<User|null>(null); const [checking,setChecking]=useState(true); const [authorized,setAuthorized]=useState(false);
-  const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [error,setError]=useState(""); const [busy,setBusy]=useState(false); const [demoMode,setDemoMode]=useState(false);
+  const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [error,setError]=useState(""); const [busy,setBusy]=useState(false);
 
-  useEffect(()=>{const enabled=isLocalDemoMode();setDemoMode(enabled);if(enabled)seedLocalDemoData();},[]);
 
   useEffect(()=>onAuthStateChanged(auth,async(nextUser)=>{
     setUser(nextUser);
@@ -23,6 +21,5 @@ export default function AdminGate({ children }: { children: React.ReactNode }) {
 
   if(checking)return <main className="adminPage"><div className="adminShell"><div className="emptyState"><h1>Opening Tripple S Admin</h1><p>Checking access…</p></div></div></main>;
   if(user&&authorized)return <div className="adminAuthorized"><div className="adminAccountBar"><span>Signed in as {user.email??"authorized staff"}</span><button className="button buttonLight" onClick={()=>void signOut(auth)}>Sign out</button></div>{children}</div>;
-  if(demoMode)return <div className="adminAuthorized"><div className="adminAccountBar"><span>LOCAL DEMO · changes stay in this browser and are not sent to Tripple S.</span><button className="button buttonLight" onClick={()=>{setLocalDemoMode(false);setDemoMode(false);}}>Exit demo</button></div>{children}</div>;
-  return <main className="adminPage"><div className="adminShell"><section className="adminPanel" style={{maxWidth:520,margin:"80px auto"}}><span className="kicker">TRIPPLE S · ADMIN</span><h1>Admin</h1><p>Sign in to start.</p><p>Use an authorized Tripple S owner or staff account.</p><form className="adminForm" onSubmit={signIn}><label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" required/></label><label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="current-password" required/></label>{error&&<p role="alert">{error}</p>}<button className="button buttonPrimary" type="submit" disabled={busy}>{busy?"Signing in…":"Sign in"}</button></form><div className="adminForm"><button className="button buttonLight" type="button" onClick={()=>{setLocalDemoMode(true);seedLocalDemoData();setDemoMode(true);}}>Open local demo</button><small>Uses sample data stored only in this browser. It does not sign you in to the live clinic system.</small></div></section></div></main>;
+  return <main className="adminPage"><div className="adminShell"><section className="adminPanel" style={{maxWidth:520,margin:"80px auto"}}><span className="kicker">TRIPPLE S · ADMIN</span><h1>Admin</h1><p>Sign in to start.</p><p>Use an authorized Tripple S owner or staff account.</p><form className="adminForm" onSubmit={signIn}><label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" required/></label><label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="current-password" required/></label>{error&&<p role="alert">{error}</p>}<button className="button buttonPrimary" type="submit" disabled={busy}>{busy?"Signing in…":"Sign in"}</button></form></section></div></main>;
 }
