@@ -12,6 +12,7 @@ function getAdminApp() {
   }, "tripple-s-server");
 }
 export function getAdminDb() { return getFirestore(getAdminApp()); }
+export function getAdminAuth() { return getAuth(getAdminApp()); }
 export async function requireAdmin(request: Request) {
   const header = request.headers.get("authorization") ?? "";
   if (!header.startsWith("Bearer ")) return null;
