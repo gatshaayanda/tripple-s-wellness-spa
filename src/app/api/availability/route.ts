@@ -27,7 +27,31 @@ export async function GET(request: NextRequest) {
     // create these locks transactionally; cancellation/decline removes them. Reading whole
     // booking-request and appointment collections for every date picker interaction is wasteful.
     const reservations = await db.collection("slotReservations").where("date", "==", date).get();
-    const occupied = new Set(reservations.docs.map((item) => String(item.data().time)));
+    // A reservation lock counts only while its owning request/calendar entry exists and is active.
+    // This prevents orphaned legacy locks from hiding otherwise-free appointment starts.
+    const reservationRows = reservations.docs.map((item) => {
+      const data = item.data();
+      const ownerRef = data.bookingRequestId
+        ? db.collection("bookingRequests").doc(String(data.bookingRequestId))
+        : data.appointmentId
+          ? db.collection("appointments").doc(String(data.appointmentId))
+          : null;
+      return { data, ownerRef };
+    });
+    const ownerRefMap = new Map<string, (typeof reservationRows)[number]["ownerRef"]>();
+    for (const row of reservationRows) if (row.ownerRef) ownerRefMap.set(row.ownerRef.path, row.ownerRef);
+    const ownerRefs = Array.from(ownerRefMap.values()).filter((ref): ref is NonNullable<typeof ref> => ref !== null);
+    const ownerSnapshots = await Promise.all(ownerRefs.map((ref) => ref.get()));
+    const owners = new Map(ownerSnapshots.map((snapshot) => [snapshot.ref.path, snapshot]));
+    const occupied = new Set(reservationRows.filter(({ ownerRef }) => {
+      if (!ownerRef) return false;
+      const owner = owners.get(ownerRef.path);
+      if (!owner?.exists) return false;
+      const status = String(owner.data()?.status ?? "");
+      return ownerRef.parent.id === "bookingRequests"
+        ? !["CANCELLED", "DECLINED", "RESCHEDULED"].includes(status)
+        : status !== "CANCELLED";
+    }).map(({ data }) => String(data.time)));
     const interval = Math.max(15, Math.min(60, Number(settings.bookingRules.slotIntervalMinutes) || 15));
     const minimum = Date.now();
     const buffer = Math.max(0, Number(settings.bookingRules.bufferMinutes) || 0);

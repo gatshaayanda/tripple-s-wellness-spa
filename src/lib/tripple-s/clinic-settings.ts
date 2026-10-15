@@ -43,6 +43,14 @@ export const defaultClinicSettings: ClinicSettings = {
   announcement: { active: false, title: "", message: "", startDate: "", endDate: "" },
 };
 
+export function parseDurationMinutes(value: string | undefined, fallback = 30): number {
+  const text = String(value ?? "").toLowerCase();
+  const hours = Array.from(text.matchAll(/(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)\b/g)).reduce((sum, match) => sum + Number(match[1]) * 60, 0);
+  const minutes = Array.from(text.matchAll(/(\d+(?:\.\d+)?)\s*(?:m|min|mins|minute|minutes)\b/g)).reduce((sum, match) => sum + Number(match[1]), 0);
+  const parsed = hours + minutes || (/^\s*\d+\s*$/.test(text) ? Number(text) : 0);
+  return Math.max(15, Math.min(240, Math.round(parsed || fallback)));
+}
+
 export function isAnnouncementVisible(settings: ClinicSettings, today = new Date(Date.now() + 2 * 3600000).toISOString().slice(0, 10)) {
   const announcement = settings.announcement;
   return announcement.active && !!announcement.message.trim()

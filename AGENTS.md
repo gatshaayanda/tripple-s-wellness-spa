@@ -578,3 +578,32 @@ My Tripple S is the customer's ongoing care companion, not merely a booking rece
 - Latest observed GitHub main checkpoint before this note: `c01335fc3ca92d98ee0bb0a92056a469b7cf3386` (`chore: retry Vercel deployment after build rate limit`). Its Vercel check reported `failure` with a build-rate-limit URL. Do not assume the latest source is deployed or live-QA-ready until a later deployment for the current main SHA succeeds and is accessible.
 - Vercel deployment listing is currently blocked by missing team authorization in the connected Vercel tool. The live app fetch previously returned HTTP 403 access denial. Do not claim runtime QA has been executed; resolve Vercel team access and confirm a successful deployment before live testing.
 - Avoid documentation-only or repeated retry commits unless the product owner explicitly requests another deployment attempt. Batch verified changes, then push once.
+
+
+---
+
+## Availability and reception onboarding refinement — 2026-10-15
+
+### Availability integrity
+- Availability must calculate treatment duration in minutes, supporting values such as `60 min`, `1 hour`, or `1 hr 30 min`; do not parse the first number in a duration label as the full duration.
+- A slot reservation is occupancy only while its owning booking request or calendar entry exists and remains active. Ignore orphaned locks and locks owned by cancelled/declined/rescheduled requests when calculating public availability. The booking POST transaction must continue to validate locks against current owner state and must not accept a conflicting active booking.
+- The picker must render each time as a distinct, accessible button with visible spacing; sort times chronologically and group by start hour. Starts advance by the configured interval, and the full treatment plus buffer must fit before closing. Never fabricate times when the API errors.
+- QA priority: on a known empty future date, verify a 60-minute service produces each valid configured start (e.g. every 15 minutes from opening through the last start that can finish by closing), then verify active reservations block overlapping starts while orphan/cancelled locks do not. Verify 45-minute and 30-minute services too.
+
+### First-visit and returning-client reception
+- `clientType` is an operational reception cue, not a clinical label or marketing segment. Show it clearly in Admin and provide a short next-step prompt.
+- First visit: warmly introduce Tripple S, explain the request/review process, and use only information the client voluntarily provided to make the interaction comfortable. Ask open, low-pressure questions when appropriate; do not interrogate or require personal disclosure.
+- Returning client: welcome them back naturally, review documented history and operational notes before contact, and reference a prior preference/detail only if it is recorded, relevant, and appropriate. Ask what they want from this visit rather than assuming their goals or circumstances.
+- Booking note is optional and request-specific. For first visits, invite only lightweight context such as how they heard about the clinic or what would help them feel comfortable; for returning clients, invite a practical preference or current focus. Do not ask for family details, origins, or sensitive medical information as a routine onboarding requirement. Never invent familiarity. Keep the clinical team responsible for clinical suitability.
+- Keep existing account holders account-first: a connected Firebase customer who opens `/book` sees a clear route to My Tripple S, with an explicit option to start a new request. Account page booking links use the explicit `newBooking=1` intent so the customer can intentionally enter the new-request form. Guest booking remains available without login.
+
+### Evidence and design rationale
+- Personalisation can improve engagement but can also raise privacy concerns; use transparent, purpose-limited notes rather than broad personal profiling: https://onlinelibrary.wiley.com/doi/10.1111/exsy.70314 and https://www.sciencedirect.com/science/article/pii/S0736376116000094
+- A two-stage disclosure study found that privacy assurance and explaining the purpose of personalisation affected willingness to share information; therefore the booking note is optional, purpose-explained, and low-pressure rather than a required questionnaire: https://www.sciencedirect.com/science/article/pii/S0148296320301004
+- Research on reactive personalisation in hospitality suggests responding to stated customer preferences can support trust and perceived ownership; apply this through documented, client-supplied preferences rather than guessing: https://www.sciencedirect.com/science/article/abs/pii/S1447677025000762
+- These studies inform interaction principles, not a guarantee of increased bookings or retention. Avoid claiming causal business outcomes without Tripple S data.
+
+### QA status discipline
+- The previous visual check of the booking section order is recorded as PASS by the product owner.
+- Live availability, request submission/conflict handling, Google/profile sync, and Admin workflow tests remain NOT RUN / N/A until the correct updated deployment is available. Do not mark them passed from source inspection alone.
+- This checkpoint is a scoped implementation candidate; inspect the diff and run TypeScript, lint, build and live QA when tooling/deployment access permits. Avoid unrelated UI, catalogue, clinical, notification, or infrastructure changes.
