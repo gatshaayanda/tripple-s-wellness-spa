@@ -91,8 +91,24 @@ export async function getServiceCategories(): Promise<ServiceCategoryRecord[]> {
 }
 
 export async function getPublicServiceCategories(): Promise<ServiceCategoryRecord[]> {
-  try { return (await getServiceCategories()).filter(item => item.active).sort((a, b) => a.order - b.order || a.name.localeCompare(b.name)); }
-  catch (error) { console.warn("[Tripple S] public categories unavailable; using seed categories", error); return trippleSCategorySeed.filter(item => item.active); }
+  try {
+    // Firestore rules are not filters: public reads must query only active categories.
+    const [snapshot, catalogueState] = await Promise.all([
+      getDocs(query(serviceCategoriesCollection, where("active", "==", true))),
+      getDoc(doc(db, "settings", "catalogueState")),
+    ]);
+    const records = snapshot.docs
+      .map(item => ({ id: item.id, ...(item.data() as Omit<ServiceCategoryRecord, "id">) }))
+      .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+
+    // Once categories are managed, an empty active result means the owner intentionally hid all categories.
+    return catalogueState.data()?.categoriesManaged === true
+      ? records
+      : (records.length ? records : trippleSCategorySeed.filter(item => item.active));
+  } catch (error) {
+    console.warn("[Tripple S] public categories unavailable; using seed categories", error);
+    return trippleSCategorySeed.filter(item => item.active);
+  }
 }
 
 export async function saveServiceCategory(item: ServiceCategoryRecord, previousName?: string) {
