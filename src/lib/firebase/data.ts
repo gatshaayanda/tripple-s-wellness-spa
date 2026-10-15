@@ -1,11 +1,11 @@
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, setDoc, updateDoc, where } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase/client";
-import { trippleSProductSeed, trippleSServiceSeed, type ServiceCategory } from "@/lib/tripple-s/catalog";
+import { legacyTrippleSServiceSeedIds, trippleSCategorySeed, trippleSProductSeed, trippleSServiceSeed, type ServiceCategoryRecord } from "@/lib/tripple-s/catalog";
 import { defaultClinicSettings, type ClinicSettings } from "@/lib/tripple-s/clinic-settings";
 import { deleteLocalDemoBucketRecord, getLocalDemoBucket, getLocalDemoRecords, isLocalDemoMode, saveLocalDemoBucketRecord, updateLocalDemoRecord } from "@/lib/tripple-s/local-demo";
 
 export type ServiceRecord = {
-  id: string; name: string; category: ServiceCategory; description: string; price: string; duration: string; active: boolean;
+  id: string; name: string; category: string; description: string; price: string; duration: string; active: boolean;
   consultationRequired?: boolean; assessmentNote?: string; prep?: string; aftercare?: string; imageUrl?: string;
 };
 
@@ -69,6 +69,76 @@ export async function getProducts(): Promise<ProductRecord[]> {
 }
 export async function saveProductRecord(item: ProductRecord) { if (isLocalDemoMode()) { saveLocalDemoBucketRecord("products", { id: item.id, record: item }); return; } await setDoc(doc(db, "products", item.id), item); await setDoc(doc(db, "settings", "catalogueState"), { productsManaged: true }, { merge: true }); }
 export async function deleteProductRecord(id: string) { if (isLocalDemoMode()) { deleteLocalDemoBucketRecord("products", id); return; } await deleteDoc(doc(db, "products", id)); await setDoc(doc(db, "settings", "catalogueState"), { productsManaged: true }, { merge: true }); }
+
+
+const serviceCategoriesCollection = collection(db, "serviceCategories");
+
+export async function getServiceCategories(): Promise<ServiceCategoryRecord[]> {
+  const snapshot = await getDocs(serviceCategoriesCollection);
+  const records = snapshot.docs.map(item => ({ id: item.id, ...(item.data() as Omit<ServiceCategoryRecord, "id">) }));
+  if (records.length) return records.sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+  const state = await getDoc(doc(db, "settings", "catalogueState"));
+  return state.data()?.categoriesManaged === true ? [] : trippleSCategorySeed;
+}
+
+export async function getPublicServiceCategories(): Promise<ServiceCategoryRecord[]> {
+  try { return (await getServiceCategories()).filter(item => item.active).sort((a, b) => a.order - b.order || a.name.localeCompare(b.name)); }
+  catch (error) { console.warn("[Tripple S] public categories unavailable; using seed categories", error); return trippleSCategorySeed.filter(item => item.active); }
+}
+
+export async function saveServiceCategory(item: ServiceCategoryRecord, previousName?: string) {
+  const name = item.name.trim().slice(0, 100);
+  if (!name) throw new Error("Enter a category name.");
+  const existing = await getDocs(serviceCategoriesCollection);
+  if (existing.docs.some(row => row.id !== item.id && String(row.data().name ?? "").trim().toLowerCase() === name.toLowerCase())) throw new Error("A category with that name already exists.");
+  if (previousName && previousName !== name) {
+    const services = await getDocs(servicesCollection);
+    for (const service of services.docs) if (String(service.data().category ?? "") === previousName) await updateDoc(service.ref, { category: name });
+  }
+  await setDoc(doc(db, "serviceCategories", item.id), { ...item, name });
+  await setDoc(doc(db, "settings", "catalogueState"), { categoriesManaged: true }, { merge: true });
+}
+
+export async function deleteServiceCategory(id: string, name: string) {
+  const services = await getDocs(servicesCollection);
+  if (services.docs.some(item => String(item.data().category ?? "") === name)) throw new Error("Move or delete the services in this category before removing it.");
+  await deleteDoc(doc(db, "serviceCategories", id));
+  await setDoc(doc(db, "settings", "catalogueState"), { categoriesManaged: true }, { merge: true });
+}
+
+export async function reconcileTrippleSCatalogue() {
+  const stateRef = doc(db, "settings", "catalogueState");
+  const stateSnapshot = await getDoc(stateRef);
+  const state = stateSnapshot.data() ?? {};
+  const firstMigration = Number(state.serviceCatalogVersion ?? 0) < 2;
+  const currentServices = await getDocs(servicesCollection);
+  const existingIds = new Set(currentServices.docs.map(item => item.id));
+  const seedIds = new Set(trippleSServiceSeed.map(item => item.id));
+  let added = 0, updated = 0, removed = 0;
+  for (const item of trippleSServiceSeed) {
+    const exists = existingIds.has(item.id);
+    if (!exists || firstMigration) { await setDoc(doc(db, "services", item.id), item); if (exists) updated++; else added++; }
+  }
+  if (firstMigration) for (const id of legacyTrippleSServiceSeedIds) if (!seedIds.has(id) && existingIds.has(id)) { await deleteDoc(doc(db, "services", id)); removed++; }
+  const currentCategories = await getDocs(serviceCategoriesCollection);
+  const categoryIds = new Set(currentCategories.docs.map(item => item.id));
+  let categoriesAdded = 0;
+  for (const item of trippleSCategorySeed) if (!categoryIds.has(item.id)) { await setDoc(doc(db, "serviceCategories", item.id), item); categoriesAdded++; }
+  const serviceRows = await getDocs(servicesCollection);
+  const knownNames = new Set([...trippleSCategorySeed.map(item => item.name), ...currentCategories.docs.map(item => String(item.data().name ?? ""))]);
+  for (const row of serviceRows.docs) {
+    const name = String(row.data().category ?? "").trim();
+    if (!name || knownNames.has(name)) continue;
+    const id = "custom-" + name.toLowerCase().normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    if (id && !categoryIds.has(id)) { await setDoc(doc(db, "serviceCategories", id), { id, name, active: true, order: 100 + categoriesAdded }); categoryIds.add(id); knownNames.add(name); categoriesAdded++; }
+  }
+  const currentProducts = await getDocs(productsCollection);
+  const productIds = new Set(currentProducts.docs.map(item => item.id));
+  let productsAdded = 0;
+  for (const item of trippleSProductSeed) if (!productIds.has(item.id)) { await setDoc(doc(db, "products", item.id), item); productsAdded++; }
+  await setDoc(stateRef, { servicesManaged: true, categoriesManaged: true, productsManaged: true, serviceCatalogVersion: 2 }, { merge: true });
+  return { added, updated, removed, categoriesAdded, productsAdded, firstMigration };
+}
 
 export async function createBookingRequest(data: Omit<BookingRequestRecord, "id">) {
   const result = await addDoc(bookingCollection, data);

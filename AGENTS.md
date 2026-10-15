@@ -607,3 +607,17 @@ My Tripple S is the customer's ongoing care companion, not merely a booking rece
 - The previous visual check of the booking section order is recorded as PASS by the product owner.
 - Live availability, request submission/conflict handling, Google/profile sync, and Admin workflow tests remain NOT RUN / N/A until the correct updated deployment is available. Do not mark them passed from source inspection alone.
 - This checkpoint is a scoped implementation candidate; inspect the diff and run TypeScript, lint, build and live QA when tooling/deployment access permits. Avoid unrelated UI, catalogue, clinical, notification, or infrastructure changes.
+
+
+---
+
+## Supplied treatment catalogue reconciliation — 2026-10-15
+
+- The eight headings and treatment names/prices supplied by the product owner are the source of truth for the public catalogue. Do not retain obsolete built-in seeded services after the one-time catalogue migration.
+- Admin can create, rename, reorder, publish/unpublish and delete empty treatment categories. Renaming a category updates its existing treatments. A category with assigned treatments cannot be deleted until treatments are moved or removed.
+- Admin can create/edit/delete treatments, set their category, price, duration, description, assessment note and visibility. Categories are Firebase-backed in `serviceCategories`, not stored in Sefalana's browser-local demo pattern.
+- The explicit “Sync supplied treatment list” action performs a one-time migration: update built-in seed IDs to the supplied names/prices, remove only known obsolete built-in seed IDs, add missing categories/products, and preserve unrelated custom records. After version 2 is recorded, later syncs only add missing seed records and must not overwrite later Admin edits.
+- Prices use the exact supplied values; variable prices use “from P…”. Repeated offerings under separate headings remain separate catalogue entries as supplied.
+- Durations were not supplied. Matching known treatments retain existing durations; other entries receive an explicitly provisional 30-minute duration and an Admin note. Before appointment availability QA or production booking, the clinic must replace provisional durations with confirmed durations. Do not represent provisional values as clinic-approved.
+- Advanced medical aesthetics retain the supplied practitioner/legal-authorisation caveat. The software does not determine clinical suitability or legal authorisation.
+- QA state: source changes need TypeScript/build and Firebase/deployed CRUD verification. Do not mark migration safety, category persistence, treatment prices or customer rendering as PASS until executed.

@@ -2,18 +2,17 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getPublicServices, type ServiceRecord } from "@/lib/firebase/data";
-
-const categories = ["All", "IV Wellness Drips", "Medical Aesthetics", "Skin Treatments", "Body Contouring", "Wellness", "Consultations", "Packages"];
+import { getPublicServiceCategories, getPublicServices, type ServiceRecord } from "@/lib/firebase/data";
 
 export default function TreatmentsPage() {
   const [services, setServices] = useState<ServiceRecord[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState("All");
 
   useEffect(() => {
-    void getPublicServices()
-      .then((items) => setServices(items.filter((x) => x.active)))
+    void Promise.all([getPublicServices(), getPublicServiceCategories()])
+      .then(([items, headings]) => { const activeHeadings = headings.filter(item => item.active).map(item => item.name); setCategories(activeHeadings); setServices(items.filter(item => item.active && activeHeadings.includes(item.category))); })
       .catch(() => setServices([]))
       .finally(() => setLoading(false));
   }, []);
