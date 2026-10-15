@@ -12,6 +12,7 @@ function getAdminApp() {
     projectId: account.project_id,
   }, "tripple-s-server");
 }
+export function getAdminAuth() { return getAuth(getAdminApp()); }
 export function getAdminDb() { return getFirestore(getAdminApp()); }
 export function getAdminMessaging() { return getMessaging(getAdminApp()); }
 export async function requireCustomer(request: Request) {
