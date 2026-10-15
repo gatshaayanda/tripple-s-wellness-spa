@@ -70,7 +70,7 @@ export default function BookForm() {
       const hour = time.slice(0, 2);
       (groups[hour] ??= []).push(time);
     }
-    return Object.entries(groups);
+    return Object.entries(groups).sort(([hourA], [hourB]) => hourA.localeCompare(hourB)).map(([hour, times]) => [hour, times.sort((a, b) => a.localeCompare(b))]);
   }, [availableSlots]);
 
   useEffect(() => {
