@@ -27,6 +27,7 @@ export default function PwaRegister() {
     window.addEventListener("appinstalled", installed);
 
     let refreshOnControllerChange: (() => void) | undefined;
+    let checkForUpdate: (() => void) | undefined;
     if ("serviceWorker" in navigator) {
       // Keep already-open tabs current when a new service worker takes control.
       let refreshing = false;
@@ -44,12 +45,12 @@ export default function PwaRegister() {
           // Check for a published update when registering and when the user returns
           // to the tab, rather than waiting for a fresh visit to discover it.
           void registration.update().catch(() => undefined);
-          const checkForUpdate = () => {
+          checkForUpdate = () => {
             if (document.visibilityState === "visible") {
               void registration.update().catch(() => undefined);
             }
           };
-          document.addEventListener("visibilitychange", checkForUpdate);
+          if (checkForUpdate) document.addEventListener("visibilitychange", checkForUpdate);
         })
         .catch(() => undefined);
     }
@@ -62,6 +63,7 @@ export default function PwaRegister() {
       if ("serviceWorker" in navigator && refreshOnControllerChange) {
         navigator.serviceWorker.removeEventListener("controllerchange", refreshOnControllerChange);
       }
+      if (checkForUpdate) document.removeEventListener("visibilitychange", checkForUpdate);
     };
   }, []);
 
