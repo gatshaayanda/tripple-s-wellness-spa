@@ -75,7 +75,7 @@ export default function Home() {
           <div className="trustLine"><span>✦</span> Personalised care <span>·</span> Discreet setting <span>·</span> Clinical guidance</div>
         </div>
         <div className="heroArtwork">
-          <ImagePlaceholder label="Tripple S hero photography placeholder" className="heroImage" />
+          <ImagePlaceholder imageUrl={services.find(service=>service.imageUrl)?.imageUrl} label="Tripple S treatment photography" className="heroImage" />
           <div className="heroCaption"><span>TRIPPLE S WELLNESS SPA</span><strong>Where beauty meets medical excellence.</strong><small>Photography placeholder · replace with approved clinic imagery</small></div>
           <div className="heroStamp"><span>CARE</span><span>WITH</span><span>CLARITY</span></div>
         </div>

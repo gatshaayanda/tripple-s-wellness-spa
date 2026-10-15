@@ -74,6 +74,7 @@ export default function TreatmentsPage() {
                 <div className="serviceGrid">
                   {items.map((item) => (
                     <article className="serviceCard" key={item.id}>
+                      {item.imageUrl && <img className="serviceImage" src={item.imageUrl} alt={`${item.name} treatment`} loading="lazy" />}
                       <span>{item.duration}</span>
                       <h3>{item.name}</h3>
                       <p>{item.description}</p>
