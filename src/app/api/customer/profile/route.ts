@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     const now = new Date().toISOString();
     const profile = db.collection("customerProfiles").doc(customer.uid);
     await profile.set({ uid: customer.uid, email: customer.email.slice(0, 200), profileConnected: true, updatedAt: now }, { merge: true });
-    const bookings = await db.collection("bookingRequests").where("customerUid", "==", customer.uid).orderBy("createdAt", "desc").limit(20).get();
+    const bookings = await db.collection("bookingRequests").where("customerUid", "==", customer.uid).limit(20).get();
     if (!bookings.empty) {
       const batch = db.batch();
       for (const booking of bookings.docs) batch.set(booking.ref, { email: customer.email.slice(0, 200), profileConnected: true, profileUpdatedAt: now }, { merge: true });
