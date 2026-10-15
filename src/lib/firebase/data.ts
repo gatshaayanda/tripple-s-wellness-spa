@@ -122,6 +122,54 @@ export async function saveClinicSettings(settings: ClinicSettings) {
 
 export type AppointmentRecord = { id:string; date:string; startTime:string; endTime:string; title:string; kind:"APPOINTMENT"|"WALK_IN"|"BLOCK"; notes?:string };
 export type LoyaltyProgramRecord = { id:string; title:string; description:string; discountType:"PERCENT"|"AMOUNT"; value:number; code:string; eligibility:"ALL"|"RETURNING"; active:boolean; startDate?:string; endDate?:string };
+
+export type ClientRecord = { id:string; name:string; phone:string; email?:string; notes?:string; updatedAt:string };
+export type FollowupRecord = { id:string; clientName:string; phone:string; reason:string; dueDate:string; status:"OPEN"|"DONE"; createdAt:string; updatedAt:string };
+export type ReviewRecord = { id:string; clientName:string; rating:number; message:string; published:boolean; createdAt:string; updatedAt:string };
+
+export async function getClients():Promise<ClientRecord[]> {
+  if (isLocalDemoMode()) return getLocalDemoBucket<ClientRecord>("clients").sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt)).slice(0,100);
+  const snap=await getDocs(query(collection(db,"clients"),orderBy("updatedAt","desc"),limit(100)));
+  return snap.docs.map(item=>({id:item.id,...(item.data() as Omit<ClientRecord,"id">)}));
+}
+export async function saveClient(item:ClientRecord) {
+  const clean={...item,name:item.name.trim().slice(0,120),phone:item.phone.trim().slice(0,40),email:item.email?.trim().slice(0,200)??"",notes:item.notes?.trim().slice(0,1000)??"",updatedAt:new Date().toISOString()};
+  if(isLocalDemoMode()){saveLocalDemoBucketRecord("clients",clean);return;}
+  await setDoc(doc(db,"clients",item.id),clean,{merge:true});
+}
+export async function deleteClient(id:string) {
+  if(isLocalDemoMode()){deleteLocalDemoBucketRecord("clients",id);return;}
+  await deleteDoc(doc(db,"clients",id));
+}
+export async function getFollowups():Promise<FollowupRecord[]> {
+  if(isLocalDemoMode()) return getLocalDemoBucket<FollowupRecord>("followups").sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0,100);
+  const snap=await getDocs(query(collection(db,"followups"),orderBy("dueDate","asc"),limit(100)));
+  return snap.docs.map(item=>({id:item.id,...(item.data() as Omit<FollowupRecord,"id">)}));
+}
+export async function saveFollowup(item:FollowupRecord) {
+  const clean={...item,clientName:item.clientName.trim().slice(0,120),phone:item.phone.trim().slice(0,40),reason:item.reason.trim().slice(0,1000),updatedAt:new Date().toISOString()};
+  if(isLocalDemoMode()){saveLocalDemoBucketRecord("followups",clean);return;}
+  await setDoc(doc(db,"followups",item.id),clean,{merge:true});
+}
+export async function deleteFollowup(id:string) {
+  if(isLocalDemoMode()){deleteLocalDemoBucketRecord("followups",id);return;}
+  await deleteDoc(doc(db,"followups",id));
+}
+export async function getReviews():Promise<ReviewRecord[]> {
+  if(isLocalDemoMode()) return getLocalDemoBucket<ReviewRecord>("reviews").sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,100);
+  const snap=await getDocs(query(collection(db,"reviews"),orderBy("createdAt","desc"),limit(100)));
+  return snap.docs.map(item=>({id:item.id,...(item.data() as Omit<ReviewRecord,"id">)}));
+}
+export async function saveReview(item:ReviewRecord) {
+  const clean={...item,clientName:item.clientName.trim().slice(0,120),message:item.message.trim().slice(0,1200),rating:Math.max(1,Math.min(5,Math.round(item.rating))),updatedAt:new Date().toISOString()};
+  if(isLocalDemoMode()){saveLocalDemoBucketRecord("reviews",clean);return;}
+  await setDoc(doc(db,"reviews",item.id),clean,{merge:true});
+}
+export async function deleteReview(id:string) {
+  if(isLocalDemoMode()){deleteLocalDemoBucketRecord("reviews",id);return;}
+  await deleteDoc(doc(db,"reviews",id));
+}
+
 const appointmentsCollection=collection(db,"appointments");
 
 export async function getAppointments():Promise<AppointmentRecord[]>{if(isLocalDemoMode())return getLocalDemoBucket<AppointmentRecord>("calendar");const snap=await getDocs(appointmentsCollection);return snap.docs.map(x=>({id:x.id,...(x.data() as Omit<AppointmentRecord,"id">)}));}
