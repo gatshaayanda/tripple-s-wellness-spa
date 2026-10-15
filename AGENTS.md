@@ -516,10 +516,10 @@ My Tripple S is the customer's ongoing care companion, not merely a booking rece
 - If legacy/orphan locks are discovered, inspect and reconcile them deliberately; do not make all stale locks invisible in the public query because that can reintroduce double-booking.
 
 ### Privacy-conscious customer-journey measurement
-- The public app may record aggregate daily counts for page views by broad route category, approximate browser-day sessions, source category (direct/search/social/referral), coarse device class, booking starts, availability checks/empty results/errors, successful request submissions, slot conflicts and enquiries.
+- The public app may record aggregate daily counts for page views by broad route category, approximate browser-tab sessions, source category (direct/search/social/referral), coarse device class, booking starts, availability checks/empty results/errors, successful request submissions, slot conflicts and enquiries.
 - Never send or store names, phone numbers, emails, appointment dates/times, selected treatments as user-level telemetry, clinical information, raw referrer URLs, URL query strings, IP addresses, or stable user identifiers in usage analytics.
 - Admin routes are excluded. Analytics failures must never block the customer journey. The daily `usageDaily` aggregate is for directional funnel insight, not a precise people count, clinical measure, revenue report or substitute for Firebase's actual usage metrics.
-- An “estimated session” is a browser-day estimate, not a verified unique person. Counts begin only after the tracking version is deployed; do not backfill or fabricate earlier traffic.
+- An “estimated session” is a tab-scoped browser session estimate, not a verified unique person. Counts begin only after the tracking version is deployed; do not backfill or fabricate earlier traffic.
 - Keep analytics event names and dimensions allow-listed server-side. Public telemetry is an untrusted signal; never use it for authentication, billing, clinical decisions or access control.
 
 ### Quota and performance rules
