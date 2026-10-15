@@ -177,6 +177,7 @@
 
 /* Persistent account access and compact live slot selection. */
 .mobileAccountLink{display:none}
+.slotHourGroups{display:grid;gap:18px}.slotHourGroup{display:grid;gap:8px}.slotHourGroup h4{margin:0;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:800}.slotHourGroup .slotGrid{grid-template-columns:repeat(4,minmax(0,1fr))}
 .timeSelectionSummary{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#fff}
 .timeSelectionSummary>div{display:grid;gap:4px;min-width:0}.timeSelectionSummary strong{font-size:1.1rem}.timeSelectionSummary small{font-size:.8rem;color:var(--muted)}
 .timePickerBackdrop{position:fixed;inset:0;z-index:80;background:rgba(22,21,18,.48);display:flex;align-items:flex-end;justify-content:center;padding:16px}
@@ -185,7 +186,7 @@
 .timePickerClose{border:1px solid var(--line);border-radius:50%;background:#fff;width:40px;height:40px;font-size:1.5rem;cursor:pointer;flex:0 0 auto}
 .timePickerDialog .slotGrid{grid-template-columns:repeat(4,minmax(0,1fr));max-height:48vh;overflow:auto;padding:2px}
 @media(max-width:800px){.mobileAccountLink{display:inline-flex;min-height:40px;padding:9px 12px;font-size:.75rem}.navInner{gap:8px}.nav .buttonPrimary{padding:10px 12px;font-size:.75rem}}
-@media(max-width:560px){.mobileAccountLink{padding:9px 10px;font-size:.7rem}.nav .buttonPrimary{padding:10px;font-size:.7rem}.timePickerBackdrop{padding:0}.timePickerDialog{border-radius:20px 20px 0 0;max-height:88dvh;padding:22px 16px calc(20px + env(safe-area-inset-bottom))}.timePickerDialog .slotGrid{grid-template-columns:repeat(3,minmax(0,1fr));max-height:52dvh}.timeSelectionSummary .button{padding:10px 13px;white-space:nowrap}}
+@media(max-width:560px){.mobileAccountLink{padding:9px 10px;font-size:.7rem}.nav .buttonPrimary{padding:10px;font-size:.7rem}.timePickerBackdrop{padding:0}.timePickerDialog{border-radius:20px 20px 0 0;max-height:88dvh;padding:22px 16px calc(20px + env(safe-area-inset-bottom))}.timePickerDialog .slotGrid,.slotHourGroup .slotGrid{grid-template-columns:repeat(3,minmax(0,1fr))}.timePickerDialog .slotGrid{max-height:none}.timeSelectionSummary .button{padding:10px 13px;white-space:nowrap}}
 @media(prefers-reduced-motion:reduce){.timePickerDialog{animation:none}}
 
 /* My Tripple S wellness companion: calm, low-pressure and responsive. */
