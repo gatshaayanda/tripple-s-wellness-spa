@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   if(authorization&&!customer)return NextResponse.json({error:"Your customer session expired. Please retry your request."},{status:401});
   const name = String(body.name ?? "").trim().slice(0, 120);
   const phone = String(body.phone ?? "").trim().slice(0, 40);
-  const email = String(body.email ?? "").trim().slice(0, 200);
+  const email = String(body.email ?? customer?.email ?? "").trim().slice(0, 200);
   const date = String(body.preferredDate ?? "").trim();
   const time = String(body.time ?? "").trim();
   const clientType = body.clientType === "RETURNING" ? "RETURNING" : "NEW";
