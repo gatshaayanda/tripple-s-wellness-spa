@@ -1,4 +1,4 @@
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, setDoc, updateDoc, where } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase/client";
 import { trippleSProductSeed, trippleSServiceSeed, type ServiceCategory } from "@/lib/tripple-s/catalog";
 import { defaultClinicSettings, type ClinicSettings } from "@/lib/tripple-s/clinic-settings";
@@ -76,7 +76,8 @@ export async function createBookingRequest(data: Omit<BookingRequestRecord, "id"
 }
 export async function getBookingRequests(): Promise<BookingRequestRecord[]> {
   if (isLocalDemoMode()) return getLocalDemoRecords<BookingRequestRecord>().filter(item => !!item.requestType);
-  const snapshot = await getDocs(bookingCollection);
+  // Keep the operational queue bounded; a full historical collection scan grows with every request.
+  const snapshot = await getDocs(query(bookingCollection, orderBy("createdAt", "desc"), limit(100)));
   return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<BookingRequestRecord, "id">) }));
 }
 export async function updateBookingStatus(id: string, status: BookingStatus) {
