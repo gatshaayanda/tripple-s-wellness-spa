@@ -23,14 +23,11 @@ export async function GET(request: NextRequest) {
     const today = new Date(Date.now() + 2 * 3600000).toISOString().slice(0, 10);
     const distance = Math.round((new Date(date + "T00:00:00+02:00").getTime() - new Date(today + "T00:00:00+02:00").getTime()) / 86400000);
     if (distance < 0 || distance > settings.bookingRules.advanceBookingDays) return NextResponse.json({ slots: [], note: "Choose a date within the booking window." });
-    const [reservations, appointments, requests] = await Promise.all([db.collection("slotReservations").where("date", "==", date).get(), db.collection("appointments").where("date", "==", date).get(), db.collection("bookingRequests").where("preferredDate", "==", date).get()]);
-    const events = appointments.docs.map((item) => { const data=item.data(); return { id:item.id, status:String(data.status??""), startTime:typeof data.startTime==="string"?data.startTime:"", endTime:typeof data.endTime==="string"?data.endTime:"" }; }).filter((item) => item.status !== "CANCELLED");
-    const heldRequestDocs = requests.docs.filter((item) => !["CANCELLED", "DECLINED", "RESCHEDULED"].includes(String(item.data().status ?? "")) && typeof item.data().preferredTime === "string");
-    const heldRequests = heldRequestDocs.map((item) => item.data());
-    const activeRequestIds = new Set(heldRequestDocs.map((item) => item.id));
-    const activeAppointmentIds = new Set(events.map((item) => item.id));
-    // Only linked active records may occupy a slot; orphaned test/cancelled locks are stale.
-    const occupied = new Set(reservations.docs.filter((item) => { const data=item.data(); if(data.bookingRequestId)return activeRequestIds.has(String(data.bookingRequestId)); if(data.appointmentId)return activeAppointmentIds.has(String(data.appointmentId)); return false; }).map((item) => String(item.data().time)));
+    // Reservation documents are the canonical occupancy index. Booking and calendar writes
+    // create these locks transactionally; cancellation/decline removes them. Reading whole
+    // booking-request and appointment collections for every date picker interaction is wasteful.
+    const reservations = await db.collection("slotReservations").where("date", "==", date).get();
+    const occupied = new Set(reservations.docs.map((item) => String(item.data().time)));
     const interval = Math.max(15, Math.min(60, Number(settings.bookingRules.slotIntervalMinutes) || 15));
     const minimum = Date.now();
     const buffer = Math.max(0, Number(settings.bookingRules.bufferMinutes) || 0);
@@ -42,8 +39,7 @@ export async function GET(request: NextRequest) {
       const busyEnd = start + duration + buffer;
       let blocked = false;
       for (let minute = start; minute < busyEnd; minute += 15) if (occupied.has(clock(minute))) blocked = true;
-      for (const event of events) if (typeof event.startTime === "string" && typeof event.endTime === "string" && start < minutes(event.endTime) && busyEnd > minutes(event.startTime)) blocked = true;
-      for (const held of heldRequests) { const heldStart=minutes(String(held.preferredTime)); const heldDuration=Number(String(held.durationSnapshot||"30").match(/\d+/)?.[0]||30); if(start<heldStart+heldDuration&&busyEnd>heldStart)blocked=true; }
+
       if (!blocked) slots.push(time);
     }
     return NextResponse.json({ slots, note: day.byAppointment ? "Appointment-only hours; the clinic will confirm your request." : "" });
