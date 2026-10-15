@@ -46,6 +46,7 @@ export default function TreatmentDetailPage() {
         <div className="container treatmentDetail">
           <Link href="/treatments" className="textLink">← All treatments</Link>
           <div className="treatmentHero">
+            {service.imageUrl && <img className="treatmentDetailImage" src={service.imageUrl} alt={`${service.name} treatment`} />}
             <div>
               <span className="kicker">{service.category}</span>
               <h1>{service.name}</h1>
