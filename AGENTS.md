@@ -655,3 +655,12 @@ The authenticated workspace should feel like a calm, premium extension of the pu
 5. Responsive layout remains usable at narrow mobile widths and desktop widths; controls are keyboard-focus visible and labels are understandable.
 6. Client-care guidance is supportive, privacy-conscious, non-diagnostic, and does not claim appointment confirmation or clinical suitability.
 7. Run TypeScript, lint, and production build; inspect the diff. Then perform runtime QA for queue search/filtering, status/payment persistence, CRUD persistence, and mobile layout. Source changes alone do not prove those runtime behaviors.
+
+
+## Treatment image uploads — 2026-10-15
+
+- Treatment records use the existing optional `imageUrl` field. The authenticated Admin treatment editor must upload image files through UploadThing rather than requiring staff to paste a URL, while retaining the saved URL for existing/manual records.
+- Reuse The Plug's UploadThing v7 integration pattern. Upload middleware must validate the request using the existing server-side `requireAdmin` Firebase ID-token/role check; do not trust client-side AdminGate alone.
+- Limit treatment uploads to one image per upload, image MIME types, and 4 MB. Surface progress/errors, preview the selected image, support replacing and clearing the image URL, and only persist catalogue changes when staff explicitly saves the treatment.
+- Render a saved treatment image on the homepage treatment cards, the public treatment menu, and the treatment detail page. Keep a graceful existing placeholder where no image is assigned; do not require images for publishing.
+- Acceptance evidence still required: dependency lock/install, TypeScript, lint, production build, unauthenticated upload denial, authorized upload success, save/refresh persistence, replacement/removal, public page rendering, and mobile layout. Source edits alone do not constitute runtime or deployed verification.
