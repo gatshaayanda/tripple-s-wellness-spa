@@ -12,10 +12,10 @@ function matchesAccessWord(input: string, expected: string) {
 
 export async function POST(request: Request) {
   try {
-    const expected = process.env.TRIPPLE_S_ADMIN_ACCESS_WORD;
+    const expected = process.env.ADMIN_PASSWORD;
     if (!expected) {
       return NextResponse.json(
-        { error: "Admin access is not configured yet. Set TRIPPLE_S_ADMIN_ACCESS_WORD in the server environment." },
+        { error: "Admin access is not configured yet. Set ADMIN_PASSWORD in the server environment." },
         { status: 503, headers: { "Cache-Control": "no-store" } },
       );
     }
