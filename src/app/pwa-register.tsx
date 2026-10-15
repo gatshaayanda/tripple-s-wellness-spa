@@ -26,8 +26,32 @@ export default function PwaRegister() {
     window.addEventListener("beforeinstallprompt", installPrompt);
     window.addEventListener("appinstalled", installed);
 
+    let refreshOnControllerChange: (() => void) | undefined;
     if ("serviceWorker" in navigator) {
-      void navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+      // Keep already-open tabs current when a new service worker takes control.
+      let refreshing = false;
+      const hadController = Boolean(navigator.serviceWorker.controller);
+      refreshOnControllerChange = () => {
+        if (!hadController || refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      };
+      navigator.serviceWorker.addEventListener("controllerchange", refreshOnControllerChange);
+
+      void navigator.serviceWorker
+        .register("/sw.js")
+        .then((registration) => {
+          // Check for a published update when registering and when the user returns
+          // to the tab, rather than waiting for a fresh visit to discover it.
+          void registration.update().catch(() => undefined);
+          const checkForUpdate = () => {
+            if (document.visibilityState === "visible") {
+              void registration.update().catch(() => undefined);
+            }
+          };
+          document.addEventListener("visibilitychange", checkForUpdate);
+        })
+        .catch(() => undefined);
     }
 
     return () => {
@@ -35,6 +59,9 @@ export default function PwaRegister() {
       window.removeEventListener("offline", offlineNow);
       window.removeEventListener("beforeinstallprompt", installPrompt);
       window.removeEventListener("appinstalled", installed);
+      if ("serviceWorker" in navigator && refreshOnControllerChange) {
+        navigator.serviceWorker.removeEventListener("controllerchange", refreshOnControllerChange);
+      }
     };
   }, []);
 
