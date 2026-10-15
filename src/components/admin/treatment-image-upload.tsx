@@ -8,7 +8,9 @@ type Props = { value: string; onChange: (url: string) => void; onError: (message
 
 export default function TreatmentImageUpload({ value, onChange, onError }: Props) {
   const [localError, setLocalError] = useState("");
+  const [progress, setProgress] = useState(0);
   const { startUpload, isUploading } = useUploadThing("treatmentImageUploader", {
+    onUploadProgress: (value) => setProgress(Math.max(0, Math.min(100, Math.round(value)))),
     headers: async () => {
       const token = await auth.currentUser?.getIdToken();
       if (!token) throw new Error("Your Admin session has expired. Sign in again before uploading.");
@@ -24,10 +26,12 @@ export default function TreatmentImageUpload({ value, onChange, onError }: Props
       }
       onChange(url);
       setLocalError("");
+      setProgress(100);
     },
     onUploadError: (error) => {
       const message = error.message || "The image could not be uploaded. Check your connection and try again.";
       setLocalError(message);
+      setProgress(0);
       onError(message);
     },
   });
@@ -49,6 +53,7 @@ export default function TreatmentImageUpload({ value, onChange, onError }: Props
       return;
     }
     setLocalError("");
+    setProgress(0);
     try {
       const uploaded = await startUpload([file]);
       if (!uploaded?.length) {
@@ -68,7 +73,7 @@ export default function TreatmentImageUpload({ value, onChange, onError }: Props
     <div className="treatmentUploadActions">
       <label className="button buttonLight">{isUploading ? "Uploading image…" : value ? "Replace image" : "Upload image"}<input type="file" accept="image/*" hidden disabled={isUploading} onChange={event => void chooseFile(event)} /></label>
       {value && <button type="button" className="button buttonLight" disabled={isUploading} onClick={() => { onChange(""); setLocalError(""); }}>Remove image</button>}
-      {isUploading && <span className="treatmentUploadStatus" role="status">Uploading securely… keep this screen open.</span>}
+      {isUploading && <div className="treatmentUploadProgressGroup" role="status" aria-live="polite"><div className="treatmentUploadProgress"><span style={{ width: `${progress}%` }} /></div><span className="treatmentUploadStatus">Uploading securely · {progress}% — keep this screen open.</span></div>}
     </div>
     {localError && <p role="alert" className="formError">{localError}</p>}
     <p className="treatmentUploadStatus">The photo is attached when you save this treatment. Removing it here clears the catalogue image; it does not delete the file from UploadThing storage.</p>
