@@ -8,6 +8,7 @@ import { auth, hasFirebaseWebConfig } from "@/lib/firebase/client";
 import type { FormEvent } from "react";
 import { getClinicSettings, getPublicServices, type ServiceRecord } from "@/lib/firebase/data";
 import { defaultClinicSettings, dayLabels, isAnnouncementVisible, type ClinicSettings, type DayKey } from "@/lib/tripple-s/clinic-settings";
+import { trackUsage } from "@/lib/tripple-s/usage";
 
 const whatsapp = "https://wa.me/26774866703?text=Hello%20Tripple%20S%2C%20I%27d%20like%20to%20enquire.";
 function localDateValue() {
@@ -79,8 +80,8 @@ export default function BookForm() {
     let cancelled = false; setLoadingSlots(true);
     fetch("/api/availability?date=" + encodeURIComponent(preferredDate) + "&duration=" + encodeURIComponent(selectedDuration))
       .then(async response => { const data=await response.json(); if(!response.ok) throw new Error(data.error||"Could not load available times."); return data as {slots:string[];note?:string}; })
-      .then(data=>{if(!cancelled){setAvailableSlots(data.slots||[]);setAvailabilityNote(data.note||"");}})
-      .catch(error=>{if(!cancelled)setAvailabilityError(error instanceof Error?error.message:"Could not load available times.");})
+      .then(data=>{if(!cancelled){setAvailableSlots(data.slots||[]);setAvailabilityNote(data.note||"");trackUsage("availability_result",{outcome:data.slots?.length?"available":"empty"});}})
+      .catch(error=>{if(!cancelled){setAvailabilityError(error instanceof Error?error.message:"Could not load available times.");trackUsage("availability_result",{outcome:"error"});}})
       .finally(()=>{if(!cancelled)setLoadingSlots(false);});
     return ()=>{cancelled=true;};
   }, [preferredDate, selectedDuration, availabilityRetry]);
@@ -135,7 +136,11 @@ export default function BookForm() {
       if(hasFirebaseWebConfig){try{const customer=auth.currentUser??(await signInAnonymously(auth)).user;headers.Authorization="Bearer "+await getIdToken(customer);}catch(authError){console.warn("[Tripple S] optional customer session unavailable; continuing as guest",authError);}}
       const response = await fetch("/api/bookings", { method: "POST", headers, body: JSON.stringify({ ...request, time: selectedTime, discountCode }) });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "The appointment request could not be saved.");
+      if (!response.ok) {
+        if (response.status === 409) trackUsage("booking_conflict");
+        throw new Error(result.error || "The appointment request could not be saved.");
+      }
+      trackUsage("booking_submit_success");
       setReference(String(result.reference || result.id).slice(0, 8).toUpperCase());
       setSubmitted(true);
       formElement.reset();
