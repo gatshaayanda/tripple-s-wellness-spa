@@ -554,10 +554,10 @@ My Tripple S is the customer's ongoing care companion, not merely a booking rece
 ### Closed-loop account setup
 - Guest booking remains available and must not be blocked by account creation.
 - After a request is recorded, the success screen should clearly invite the customer to secure their My Tripple S profile with Google, so history is easier to find. Preserve the booking reference and offer a way to continue without immediate account setup.
-- Linking Google to the existing anonymous Firebase identity should preserve that identity. After a successful link, sync the verified email to the customer's recent booking requests and set `profileConnected`; this lets the staff queue recognise profile completion.
+- Linking Google to the existing anonymous Firebase identity should preserve that identity. After a successful link, sync the verified email to up to 20 booking requests for that customer and set `profileConnected`; this lets the staff queue recognise profile completion.
 - If an existing Google identity cannot be linked and the customer signs into a separate identity, do not silently merge booking histories. Explain the limitation and retain the booking reference as the recovery path.
 - In the admin appointment detail, show whether the profile is connected. If not, staff should invite the customer to complete setup during human follow-up; do not claim an automated reminder was sent.
-- The customer profile sync endpoint may update at most the 20 most recent requests for that verified UID. Keep profile-sync operations authenticated, bounded and separate from public analytics.
+- The customer profile sync endpoint may update at most 20 requests associated with that verified UID, avoiding a composite-index dependency. Keep profile-sync operations authenticated, bounded and separate from public analytics.
 - Booking requests are still pending clinic review until staff explicitly changes status. Profile completion, email association, slot reservation and appointment confirmation are distinct states.
 
 ### Privacy and operational constraints
