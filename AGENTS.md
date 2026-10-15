@@ -496,3 +496,45 @@ My Tripple S is the customer's ongoing care companion, not merely a booking rece
 - Render live appointment availability in chronological order, grouped by hour. Slot values remain sourced from `GET /api/availability`; that endpoint must continue to honor admin-configured opening hours, slot interval, service duration, buffer, booking window and conflicts. Recheck on submission.
 - Present appointment confirmations/status changes as the recommended notification use case. Keep marketing, published offers and clinic news as a separate opt-in. Never request browser notification permission without a clear customer action, and never claim push delivery while Firebase Web Push configuration is missing.
 - Admin sign-in uses a single server-verified access word, following The Plug's operations-gate pattern; the word must be held only in the server environment as `ADMIN_PASSWORD`, never hardcoded in client code. The endpoint issues a Firebase custom token and authorization still depends on an owner/staff role record. Keep `FIREBASE_ADMIN_KEY` server-only. Configure the access word separately in the correct Vercel environments before testing sign-in; do not reuse The Plug's secret or credentials.
+
+
+---
+
+## Admin operations, availability and quota-aware usage — 2026-10-15
+
+### Admin operating surface
+- The authenticated admin surface must expose the actual operational workflows: request review/status/payment state, service CRUD, product CRUD, opening hours/booking rules/announcements, calendar entries and slot blocks, loyalty/discount CRUD, client contact records, follow-up reminders, review/feedback moderation, and aggregate usage insights.
+- Admin screens must explain when an action is only an internal status/moderation flag. Do not imply that an internal review flag publishes content, that a follow-up sends a message, or that a payment status represents a real payment gateway.
+- Keep list reads bounded. Current request, client, follow-up and feedback views load at most 100 records; if volume grows, implement cursor pagination rather than removing limits or using Firestore offsets.
+- Keep client records operational and minimal. Do not add diagnosis, suitability decisions, prescriptions, or unnecessary clinical information.
+
+### Canonical slot reservations
+- `slotReservations` is the canonical occupancy index: booking requests and calendar entries reserve every overlapping 15-minute unit (including configured treatment duration and buffer) in a transaction.
+- Public availability must derive blocked times from these reservation locks plus admin-configured clinic settings. Do not scan all booking requests or appointment documents for each date-picker interaction.
+- Booking submission must revalidate by checking every required reservation lock inside a transaction. A request is not a confirmed appointment; requests remain pending clinic review.
+- Declined, cancelled and rescheduled requests must release their reservation locks. Removing/editing a calendar entry must keep its lock records synchronized. Never show a locked slot as available to improve conversion.
+- If legacy/orphan locks are discovered, inspect and reconcile them deliberately; do not make all stale locks invisible in the public query because that can reintroduce double-booking.
+
+### Privacy-conscious customer-journey measurement
+- The public app may record aggregate daily counts for page views by broad route category, approximate browser-day sessions, source category (direct/search/social/referral), coarse device class, booking starts, availability checks/empty results/errors, successful request submissions, slot conflicts and enquiries.
+- Never send or store names, phone numbers, emails, appointment dates/times, selected treatments as user-level telemetry, clinical information, raw referrer URLs, URL query strings, IP addresses, or stable user identifiers in usage analytics.
+- Admin routes are excluded. Analytics failures must never block the customer journey. The daily `usageDaily` aggregate is for directional funnel insight, not a precise people count, clinical measure, revenue report or substitute for Firebase's actual usage metrics.
+- An “estimated session” is a browser-day estimate, not a verified unique person. Counts begin only after the tracking version is deployed; do not backfill or fabricate earlier traffic.
+- Keep analytics event names and dimensions allow-listed server-side. Public telemetry is an untrusted signal; never use it for authentication, billing, clinical decisions or access control.
+
+### Quota and performance rules
+- Firestore free-tier reference: 50,000 document reads/day and 20,000 writes/day for a qualifying database; verify current quota and actual Firebase project before forecasting. Official source: https://firebase.google.com/docs/firestore/pricing
+- Prefer one bounded date query over reading multiple whole collections; use query limits and cursors; avoid offsets and realtime listeners unless a real-time workflow needs them. Official guidance: https://firebase.google.com/docs/firestore/best-practices
+- The admin usage dashboard reads only daily aggregate documents for the selected 7/30-day window. Each tracked event uses one aggregate document write; keep event instrumentation purposeful and review Firebase's usage dashboard alongside app funnel metrics.
+- Firestore aggregation queries can reduce data returned compared with reading full records; they still consume index reads. Official source: https://firebase.google.com/docs/firestore/query-data/aggregation-queries
+
+### Evidence-led booking experience
+- Keep date, service duration, opening hours, slot interval, buffer, booking window and reservation locks consistent between the admin settings, public picker and booking POST validation.
+- Show slots in chronological order, make unavailable/empty/error states distinguishable, preserve a clear human review step, and explain that a request is not confirmed until Tripple S confirms it.
+- Do not assume “fewer choices is always better.” Choice-overload research finds effects depend on complexity and context; keep the selection task understandable, group times chronologically and surface the information needed to choose without inventing recommendations. Background review: https://pubmed.ncbi.nlm.nih.gov/38784631/
+- Online appointment booking research identifies ease of use, reliable access to suitable slots and clear alternatives as important to adoption; preserve a human contact route for clients who prefer it. Study: https://pmc.ncbi.nlm.nih.gov/articles/PMC11263895/
+
+### Current implementation checkpoint
+- Admin routes: `/admin`, `/admin/calendar`, `/admin/loyalty`, `/admin/clients`, `/admin/followups`, `/admin/reviews`, `/admin/usage`.
+- Usage instrumentation intentionally starts from deployment; empty historical metrics are expected.
+- Verify TypeScript, lint, production build, deployed API behavior, booking conflicts/cancellation and real Firebase reads/writes before describing this slice as fully verified.
