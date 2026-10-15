@@ -538,3 +538,30 @@ My Tripple S is the customer's ongoing care companion, not merely a booking rece
 - Admin routes: `/admin`, `/admin/calendar`, `/admin/loyalty`, `/admin/clients`, `/admin/followups`, `/admin/reviews`, `/admin/usage`.
 - Usage instrumentation intentionally starts from deployment; empty historical metrics are expected.
 - Verify TypeScript, lint, production build, deployed API behavior, booking conflicts/cancellation and real Firebase reads/writes before describing this slice as fully verified.
+
+
+---
+
+## Booking journey and account-completion loop — 2026-10-15
+
+### Public appointment request order
+- The booking form order is: **01 What brings you in? → 02 When works for you? → 03 How can we reach you?**
+- Treatment/consultation choice precedes date selection; date selection precedes the available-time picker. Keep times chronological and sourced from the live availability endpoint.
+- Keep name and WhatsApp/mobile required so the clinic can respond. Do not ask for email as a separate required or optional field in the booking form; email can be obtained from a connected Google identity after the request.
+- A blank treatment means “Consultation / help choosing”; it does not mean a clinical decision has been made. The clinical team decides suitability.
+- A valid appointment request still needs a date and available time, even when the customer asks for help choosing. Never imply a requested slot is confirmed.
+
+### Closed-loop account setup
+- Guest booking remains available and must not be blocked by account creation.
+- After a request is recorded, the success screen should clearly invite the customer to secure their My Tripple S profile with Google, so history is easier to find. Preserve the booking reference and offer a way to continue without immediate account setup.
+- Linking Google to the existing anonymous Firebase identity should preserve that identity. After a successful link, sync the verified email to the customer's recent booking requests and set `profileConnected`; this lets the staff queue recognise profile completion.
+- If an existing Google identity cannot be linked and the customer signs into a separate identity, do not silently merge booking histories. Explain the limitation and retain the booking reference as the recovery path.
+- In the admin appointment detail, show whether the profile is connected. If not, staff should invite the customer to complete setup during human follow-up; do not claim an automated reminder was sent.
+- The customer profile sync endpoint may update at most the 20 most recent requests for that verified UID. Keep profile-sync operations authenticated, bounded and separate from public analytics.
+- Booking requests are still pending clinic review until staff explicitly changes status. Profile completion, email association, slot reservation and appointment confirmation are distinct states.
+
+### Privacy and operational constraints
+- Use the email claim from the verified Firebase ID token, not an arbitrary client-supplied email, when syncing the connected profile.
+- Store only operational contact details required for the customer journey. Do not collect medical history or sensitive clinical details in this flow.
+- Test both Google-link success and failure, including a provider already linked to another UID, blocked popups, unauthorised domains and retry behaviour. Do not promise that existing separate account histories are merged.
+- QA acceptance: verify section order; date → live times; no manual email field; guest request works; success CTA leads to account setup; Google linking syncs email/profile state; Admin reflects connected vs not-yet-connected; request remains pending until staff review.
