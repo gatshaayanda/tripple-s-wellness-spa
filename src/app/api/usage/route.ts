@@ -11,7 +11,9 @@ const sources = new Set(["direct", "search", "social", "referral"]);
 const devices = new Set(["mobile", "tablet", "desktop"]);
 
 export async function POST(request: NextRequest) {
+  const origin = request.headers.get("origin");
   try {
+    if (!origin || new URL(origin).host !== request.nextUrl.host) return NextResponse.json({ error: "Same-origin telemetry only." }, { status: 403 });
     const body = await request.json() as Record<string, unknown>;
     const event = String(body.event ?? "");
     if (!events.has(event)) return NextResponse.json({ error: "Unsupported usage event." }, { status: 400 });
