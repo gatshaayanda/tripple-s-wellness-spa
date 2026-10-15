@@ -68,7 +68,7 @@ export default function NotificationSettings() {
   if(!vapidKey){setMessage("Push is not configured on this deployment yet.");return;}
   setBusy(true);setMessage("");
   try{
-   if(!("Notification" in window)||Notification.permission!=="granted")throw new Error("Enable notifications on this device first.");
+   if(!("Notification" in window)||Notification.permission!=="granted")throw new Error("Turn on device notifications first.");
    const messaging=await getMessagingInstance(),registration=await navigator.serviceWorker.ready;
    const deviceToken=await getToken(messaging,{vapidKey,serviceWorkerRegistration:registration});
    if(!deviceToken)throw new Error("This device is not registered for Tripple S notifications yet.");
@@ -79,11 +79,11 @@ export default function NotificationSettings() {
   }catch(error){setMessage(error instanceof Error?error.message:"The test notification failed.");}finally{setBusy(false);}
  }
  return <section className="notificationSettings">
-  <div className="panelHeading"><div><span className="kicker">YOUR PREFERENCES</span><h2>Notifications</h2></div><span className="orderTruth">{registered&&prefs.enabled?"Push is enabled on this account":permission==="denied"?"Blocked by browser/device":"Optional"}</span></div>
-  <p>Choose useful updates after your request is saved. You can always check request status here, even when push notifications are unavailable.</p>
-  <label className="notificationPreference"><input type="checkbox" checked={prefs.appointmentUpdates} disabled={busy||!uid} onChange={event=>void savePreferences({...prefs,appointmentUpdates:event.target.checked})}/><span><strong>Appointment updates</strong><small>Let this device receive supported changes to your request status.</small></span></label>
-  <label className="notificationPreference"><input type="checkbox" checked={prefs.offersAndNews} disabled={busy||!uid} onChange={event=>void savePreferences({...prefs,offersAndNews:event.target.checked})}/><span><strong>Published offers & clinic news</strong><small>Optional updates only when the clinic publishes relevant information.</small></span></label>
-  {!vapidKey?<p className="notificationSetupNote">Push setup is not complete on this deployment. These preferences can be saved, but system notifications will not be sent until the clinic&apos;s Firebase Web Push key is configured.</p>:<div className="actions"><button type="button" className="button buttonPrimary" disabled={busy||!uid} onClick={()=>void enable()}>{busy?"Setting up…":"Enable notifications on this device"}</button><button type="button" className="button buttonLight" disabled={busy||!uid} onClick={()=>void test()}>{busy?"Checking…":"Send a test to this device"}</button></div>}
+  <div className="panelHeading"><div><span className="kicker">YOUR PREFERENCES</span><h2>Stay in the loop.</h2></div><span className="orderTruth">{registered&&prefs.enabled?"This device is registered":permission==="denied"?"Blocked in device settings":"Recommended"}</span></div>
+  <p>Turn on device notifications so you can see appointment confirmations and changes without needing to keep checking. Your request history always remains available in My Tripple S.</p>
+  <label className="notificationPreference"><input type="checkbox" checked={prefs.appointmentUpdates} disabled={busy||!uid} onChange={event=>void savePreferences({...prefs,appointmentUpdates:event.target.checked})}/><span><strong>Appointment confirmations & updates <span className="preferenceRecommended">Recommended</span></strong><small>Receive supported changes to your request status and appointment next steps on this device.</small></span></label>
+  <label className="notificationPreference"><input type="checkbox" checked={prefs.offersAndNews} disabled={busy||!uid} onChange={event=>void savePreferences({...prefs,offersAndNews:event.target.checked})}/><span><strong>Special perks, published offers & clinic news</strong><small>Separate opt-in for relevant offers and clinic announcements. Only published information will be sent.</small></span></label>
+  {!vapidKey?<p className="notificationSetupNote">Your preferences can be saved, but this deployment cannot send system notifications until the clinic&apos;s Firebase Web Push key is configured. The clinic team should finish setup so you can receive updates on this device.</p>:<div className="actions"><button type="button" className="button buttonPrimary" disabled={busy||!uid} onClick={()=>void enable()}>{busy?"Setting up…":"Enable notifications on this device"}</button><button type="button" className="button buttonLight" disabled={busy||!uid} onClick={()=>void test()}>{busy?"Checking…":"Send a test to this device"}</button></div>}
   {message&&<p className="notice" role="status">{message}</p>}
  </section>;
 }
