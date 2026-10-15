@@ -36,7 +36,16 @@ export async function getPublicServices(): Promise<ServiceRecord[]> {
   if (isLocalDemoMode()) return getServices();
   try {
     const [snapshot, catalogueState] = await Promise.all([getDocs(query(servicesCollection, where("active", "==", true))), getDoc(doc(db, "settings", "catalogueState"))]);
-    if (snapshot.empty) return catalogueState.data()?.servicesManaged === true ? [] : trippleSServiceSeed;
+    const state = catalogueState.data() ?? {};
+    if (Number(state.serviceCatalogVersion ?? 0) < 2) {
+      const seedIds = new Set(trippleSServiceSeed.map(item => item.id));
+      const custom = snapshot.docs
+        .filter(item => !legacyTrippleSServiceSeedIds.includes(item.id) && !seedIds.has(item.id))
+        .map(item => ({ id: item.id, ...(item.data() as Omit<ServiceRecord, "id">) }))
+        .filter(item => item.active);
+      return [...trippleSServiceSeed, ...custom];
+    }
+    if (snapshot.empty) return state.servicesManaged === true ? [] : trippleSServiceSeed;
     return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ServiceRecord, "id">) })).filter((item) => item.active);
   } catch (error) {
     console.warn("[Tripple S] public services unavailable; using the seed catalogue", error);
@@ -129,7 +138,7 @@ export async function reconcileTrippleSCatalogue() {
   for (const row of serviceRows.docs) {
     const name = String(row.data().category ?? "").trim();
     if (!name || knownNames.has(name)) continue;
-    const id = "custom-" + name.toLowerCase().normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const id = "custom-" + name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     if (id && !categoryIds.has(id)) { await setDoc(doc(db, "serviceCategories", id), { id, name, active: true, order: 100 + categoriesAdded }); categoryIds.add(id); knownNames.add(name); categoriesAdded++; }
   }
   const currentProducts = await getDocs(productsCollection);
