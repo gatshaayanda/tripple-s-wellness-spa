@@ -34,19 +34,14 @@ function deviceBucket(): NonNullable<UsagePayload["device"]> {
   return "desktop";
 }
 
-function isFirstBrowserDay(): boolean {
-  const today = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const key = "tripple-s-usage-counted-" + today;
+function isFirstSession(): boolean {
+  const key = "tripple-s-usage-session-counted";
   try {
-    if (localStorage.getItem(key) === "1") return false;
-    localStorage.setItem(key, "1");
+    if (sessionStorage.getItem(key) === "1") return false;
+    sessionStorage.setItem(key, "1");
     return true;
   } catch {
-    const fallback = "tripple-s-usage-counted";
-    try {
-      if (sessionStorage.getItem(fallback) === today) return false;
-      sessionStorage.setItem(fallback, today);
-    } catch {}
+    // If storage is unavailable, count this view as a best-effort session estimate.
     return true;
   }
 }
@@ -56,7 +51,7 @@ export function trackUsage(event: UsageEvent, extra: Pick<UsagePayload, "categor
   if (typeof window === "undefined") return;
   const payload: UsagePayload = { event, ...extra };
   if (event === "page_view") {
-    payload.firstSession = isFirstBrowserDay();
+    payload.firstSession = isFirstSession();
     payload.source = sourceBucket();
     payload.device = deviceBucket();
   }
