@@ -137,7 +137,7 @@ export default function BookForm() {
       const response = await fetch("/api/bookings", { method: "POST", headers, body: JSON.stringify({ ...request, time: selectedTime, discountCode }) });
       const result = await response.json();
       if (!response.ok) {
-        if (response.status === 409) trackUsage("booking_conflict");
+        if (response.status === 409 && String(result.error ?? "").toLowerCase().includes("just taken that slot")) trackUsage("booking_conflict");
         throw new Error(result.error || "The appointment request could not be saved.");
       }
       trackUsage("booking_submit_success");
