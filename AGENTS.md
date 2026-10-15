@@ -621,3 +621,37 @@ My Tripple S is the customer's ongoing care companion, not merely a booking rece
 - Durations were not supplied. Matching known treatments retain existing durations; other entries receive an explicitly provisional 30-minute duration and an Admin note. Before appointment availability QA or production booking, the clinic must replace provisional durations with confirmed durations. Do not represent provisional values as clinic-approved.
 - Advanced medical aesthetics retain the supplied practitioner/legal-authorisation caveat. The software does not determine clinical suitability or legal authorisation.
 - QA state: source changes need TypeScript/build and Firebase/deployed CRUD verification. Do not mark migration safety, category persistence, treatment prices or customer rendering as PASS until executed.
+
+
+---
+
+## Admin care-desk UX direction — 2026-10-15
+
+### Product intent
+The authenticated workspace should feel like a calm, premium extension of the public Tripple S experience—not a generic back-office table. Staff should be able to acknowledge, review and progress requests with minimal navigation on both desktop and mobile. Preserve existing Firebase ownership, authentication, request/status/payment flows, catalogue CRUD, clinic settings, and linked admin routes unless a separately verified defect requires change.
+
+### Daily workflow priorities
+- Make the Requests queue the first operational landing surface.
+- Let staff search by client name, phone, treatment/item, status, or preferred date, and filter All / New / Appointments / Enquiries without changing persisted records.
+- Keep the request details, status controls, payment controls (appointments only), and call/WhatsApp actions available.
+- Clearly remind staff that a request is not confirmed until the clinic completes its process.
+- Use short, humane client-care prompts: acknowledge the request, avoid assumptions, protect privacy, and refer suitability/clinical decisions to the clinic team. Never imply that software or reception staff can decide clinical suitability.
+- Use clear feedback, visible focus states, touch-friendly controls, and responsive layouts. Avoid tiny controls, horizontal page overflow, and long dense blocks on mobile.
+- Keep infrequent maintenance tasks out of the primary daily flow. The one-time/reconciliation “Sync supplied treatment list” control is not part of routine clinic operations and should not appear beside normal treatment CRUD. Use “Add treatment” and individual edit/visibility controls for normal catalogue management. Do not run reconciliation automatically or change seeded/catalogue data as part of this visual refresh.
+- Keep the internal reconcileTrippleSCatalogue() implementation untouched unless a separate catalogue-migration task explicitly requires changes. Removing its UI control does not remove the function or perform any Firebase writes.
+
+### Evidence informing the design
+- Nielsen Norman Group, “Progressive Disclosure” (2006): show the most important/frequently used actions first and defer infrequent/advanced tasks, while making secondary actions discoverable: https://www.nngroup.com/articles/progressive-disclosure/
+- Nielsen Norman Group, “Website Forms Usability: Top 10 Recommendations”: group related controls, use clear labels, and favor a simple vertical flow especially on small screens: https://www.nngroup.com/articles/web-form-design/
+- Merriweather et al., *npj Digital Medicine* (published 14 January 2026), survey of 564 physicians across 32 specialties: system usability and alignment to workflow were associated with reduced extraneous cognitive load; information overload partially mediated effects: https://www.nature.com/articles/s41746-025-02243-4
+- Rivera-Rodriguez & Karsh, *BMJ Quality & Safety*, “Interruptions and distractions in healthcare: review and reappraisal”: interruptions are common in care settings, so the interface should make status, context, and the next action easy to recover after an interruption: https://qualitysafety.bmj.com/content/19/4/304
+- These sources inform design hypotheses, not proof of outcomes for Tripple S. Validate them with staff usability checks on real phones and desktops.
+
+### Acceptance criteria for admin UX changes
+1. The daily Requests queue opens by default and still loads the same request data.
+2. Search and filters affect only the visible queue; clearing filters restores the list.
+3. Existing request selection, status changes, appointment payment updates, call/WhatsApp links, and catalogue/settings actions remain intact.
+4. No routine catalogue sync button is shown; treatment add/edit/delete and visibility controls remain available.
+5. Responsive layout remains usable at narrow mobile widths and desktop widths; controls are keyboard-focus visible and labels are understandable.
+6. Client-care guidance is supportive, privacy-conscious, non-diagnostic, and does not claim appointment confirmation or clinical suitability.
+7. Run TypeScript, lint, and production build; inspect the diff. Then perform runtime QA for queue search/filtering, status/payment persistence, CRUD persistence, and mobile layout. Source changes alone do not prove those runtime behaviors.
