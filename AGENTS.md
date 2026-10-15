@@ -490,3 +490,9 @@ My Tripple S is the customer's ongoing care companion, not merely a booking rece
 - Time selector is compact and keyboard/screen-reader usable; selection remains visible and existing live availability validation is unchanged.
 - Feed content is truthful, low-pressure and clearly separated from clinic-published offers/aftercare.
 - Run repository lint/build and inspect the diff before checkpoint. Report unavailable local/runtime verification honestly; a GitHub push or Vercel READY state alone is not proof of real customer behaviour.
+
+### Appointment picker, notifications and Admin access follow-up (2026-10-15)
+
+- Render live appointment availability in chronological order, grouped by hour. Slot values remain sourced from `GET /api/availability`; that endpoint must continue to honor admin-configured opening hours, slot interval, service duration, buffer, booking window and conflicts. Recheck on submission.
+- Present appointment confirmations/status changes as the recommended notification use case. Keep marketing, published offers and clinic news as a separate opt-in. Never request browser notification permission without a clear customer action, and never claim push delivery while Firebase Web Push configuration is missing.
+- Admin sign-in uses a single server-verified access word, following The Plug's operations-gate pattern; the word must be held only in the server environment as `TRIPPLE_S_ADMIN_ACCESS_WORD`, never hardcoded in client code. The endpoint issues a Firebase custom token and authorization still depends on an owner/staff role record. Keep `FIREBASE_ADMIN_KEY` server-only. Configure the access word separately in the correct Vercel environments before testing sign-in; do not reuse The Plug's secret or credentials.
