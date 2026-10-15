@@ -664,3 +664,11 @@ The authenticated workspace should feel like a calm, premium extension of the pu
 - Limit treatment uploads to one image per upload, image MIME types, and 4 MB. Surface progress/errors, preview the selected image, support replacing and clearing the image URL, and only persist catalogue changes when staff explicitly saves the treatment.
 - Render a saved treatment image on the homepage treatment cards, the public treatment menu, and the treatment detail page. Keep a graceful existing placeholder where no image is assigned; do not require images for publishing.
 - Acceptance evidence still required: dependency lock/install, TypeScript, lint, production build, unauthenticated upload denial, authorized upload success, save/refresh persistence, replacement/removal, public page rendering, and mobile layout. Source edits alone do not constitute runtime or deployed verification.
+
+
+## Catalogue editor UX checkpoint — 2026-10-15
+
+- Treatment, treatment-category, and product create/edit forms belong in a centered, responsive modal rather than being appended below the catalogue list.
+- Modal content scrolls internally on desktop and mobile; Escape, close control, and backdrop close dismiss the editor without saving. Body scrolling is locked while the modal is open.
+- Catalogue save outcomes use a visible status toast. Treatment image upload shows a thumbnail/empty state, replacement/removal controls, and upload progress percentage.
+- Keep UploadThing staff authorization and the 4 MB image limit. A selected image URL is persisted to the catalogue only when the corresponding record is saved.
