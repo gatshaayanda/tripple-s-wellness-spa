@@ -565,3 +565,16 @@ My Tripple S is the customer's ongoing care companion, not merely a booking rece
 - Store only operational contact details required for the customer journey. Do not collect medical history or sensitive clinical details in this flow.
 - Test both Google-link success and failure, including a provider already linked to another UID, blocked popups, unauthorised domains and retry behaviour. Do not promise that existing separate account histories are merged.
 - QA acceptance: verify section order; date → live times; no manual email field; guest request works; success CTA leads to account setup; Google linking syncs email/profile state; Admin reflects connected vs not-yet-connected; request remains pending until staff review.
+
+
+---
+
+## Booking/profile QA checkpoint and deployment retry — 2026-10-15
+
+- The booking journey changes are committed on `main`: treatment/help choice → date and live available time → customer name/mobile → submit. There is no manual email field in the booking form.
+- After a guest request is successfully recorded, the customer can continue to My Tripple S and link Google. Profile sync uses the verified identity and is bounded to at most 20 requests for that UID. The admin request detail must distinguish a connected profile from one that still needs follow-up.
+- Keep guest booking available. Do not merge separate Firebase identities or claim profile sync succeeded if its API call failed. Requests remain pending until staff explicitly reviews and confirms them.
+- QA remains outstanding: opening-hour/interval/duration boundaries; request creation and pending reference; unavailable-slot conflict and cancellation/release; Google link success/failure and profile sync; Admin connected/not-connected indicators; and authenticated Admin CRUD/usage views.
+- Latest observed GitHub main checkpoint before this note: `c01335fc3ca92d98ee0bb0a92056a469b7cf3386` (`chore: retry Vercel deployment after build rate limit`). Its Vercel check reported `failure` with a build-rate-limit URL. Do not assume the latest source is deployed or live-QA-ready until a later deployment for the current main SHA succeeds and is accessible.
+- Vercel deployment listing is currently blocked by missing team authorization in the connected Vercel tool. The live app fetch previously returned HTTP 403 access denial. Do not claim runtime QA has been executed; resolve Vercel team access and confirm a successful deployment before live testing.
+- Avoid documentation-only or repeated retry commits unless the product owner explicitly requests another deployment attempt. Batch verified changes, then push once.
