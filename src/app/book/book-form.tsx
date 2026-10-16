@@ -42,12 +42,35 @@ export default function BookForm() {
   const [serviceId, setServiceId] = useState(requestedService);
   const minDate = localDateValue();
 
-  useEffect(() => onAuthStateChanged(auth, (user) => {
-    setHasConnectedAccount(Boolean(user && !user.isAnonymous));
-    setCustomerName(user?.displayName ?? "");
-    setCustomerPhone(user?.phoneNumber ?? "");
-    setCustomerEmail(user?.email ?? "");
-  }), []);
+  useEffect(() => {
+    let cancelled = false;
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      const googleProfile = user?.providerData.find((provider) => provider.providerId === "google.com");
+      setHasConnectedAccount(Boolean(user && !user.isAnonymous));
+      setCustomerName(user?.displayName || googleProfile?.displayName || "");
+      setCustomerPhone(user?.phoneNumber ?? "");
+      setCustomerEmail(user?.email || googleProfile?.email || "");
+      if (!user) return;
+      try {
+        const token = await getIdToken(user);
+        const response = await fetch("/api/customer/profile", {
+          headers: { Authorization: "Bearer " + token },
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+        const profile = await response.json() as { name?: string; phone?: string; email?: string };
+        if (cancelled) return;
+        // Saved contact details take precedence over provider data because the customer may
+        // have corrected their preferred name or WhatsApp number on an earlier request.
+        setCustomerName(profile.name || user.displayName || googleProfile?.displayName || "");
+        setCustomerPhone(profile.phone || user.phoneNumber || "");
+        setCustomerEmail(profile.email || user.email || googleProfile?.email || "");
+      } catch (profileError) {
+        console.warn("[Tripple S] saved customer details unavailable; using account details", profileError);
+      }
+    });
+    return () => { cancelled = true; unsubscribe(); };
+  }, []);
 
   useEffect(() => {
     void Promise.all([getPublicServices(), getClinicSettings()])
