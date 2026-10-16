@@ -4,9 +4,9 @@ import { useState } from "react";
 import { useUploadThing } from "@/lib/uploadthing";
 import { auth } from "@/lib/firebase/client";
 
-type Props = { value: string; onChange: (url: string) => void; onError: (message: string) => void };
+type Props = { value: string; onChange: (url: string) => void; onError: (message: string) => void; kind?: "treatment" | "product" };
 
-export default function TreatmentImageUpload({ value, onChange, onError }: Props) {
+export default function TreatmentImageUpload({ value, onChange, onError, kind = "treatment" }: Props) {
   const [localError, setLocalError] = useState("");
   const [progress, setProgress] = useState(0);
   const { startUpload, isUploading } = useUploadThing("treatmentImageUploader", {
@@ -69,13 +69,13 @@ export default function TreatmentImageUpload({ value, onChange, onError }: Props
   }
 
   return <div className="treatmentUploadControl">
-    {value ? <img className="treatmentUploadPreview" src={value} alt="Treatment image preview" /> : <div className="treatmentUploadEmpty"><strong>No treatment photo selected</strong><span>Upload an approved clinic image up to 4 MB.</span></div>}
+    {value ? <img className="treatmentUploadPreview" src={value} alt={kind === "product" ? "Product image preview" : "Treatment image preview"} /> : <div className="treatmentUploadEmpty"><strong>No {kind} photo selected</strong><span>Upload an approved clinic image up to 4 MB.</span></div>}
     <div className="treatmentUploadActions">
-      <label className="button buttonLight">{isUploading ? "Uploading image…" : value ? "Replace image" : "Upload image"}<input type="file" accept="image/*" hidden disabled={isUploading} onChange={event => void chooseFile(event)} /></label>
+      <label className="button buttonLight">{isUploading ? "Uploading image…" : value ? "Replace image" : `Upload ${kind} image`}<input type="file" accept="image/*" hidden disabled={isUploading} onChange={event => void chooseFile(event)} /></label>
       {value && <button type="button" className="button buttonLight" disabled={isUploading} onClick={() => { onChange(""); setLocalError(""); }}>Remove image</button>}
       {isUploading && <div className="treatmentUploadProgressGroup" role="status" aria-live="polite"><div className="treatmentUploadProgress"><span style={{ width: `${progress}%` }} /></div><span className="treatmentUploadStatus">Uploading securely · {progress}% — keep this screen open.</span></div>}
     </div>
     {localError && <p role="alert" className="formError">{localError}</p>}
-    <p className="treatmentUploadStatus">The photo is attached when you save this treatment. Removing it here clears the catalogue image; it does not delete the file from UploadThing storage.</p>
+    <p className="treatmentUploadStatus">{`The photo is attached when you save this ${kind}. Removing it here clears the catalogue image; it does not delete the file from UploadThing storage.`}</p>
   </div>;
 }
