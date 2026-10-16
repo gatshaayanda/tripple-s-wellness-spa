@@ -672,3 +672,52 @@ The authenticated workspace should feel like a calm, premium extension of the pu
 - Modal content scrolls internally on desktop and mobile; Escape, close control, and backdrop close dismiss the editor without saving. Body scrolling is locked while the modal is open.
 - Catalogue save outcomes use a visible status toast. Treatment image upload shows a thumbnail/empty state, replacement/removal controls, and upload progress percentage.
 - Keep UploadThing staff authorization and the 4 MB image limit. A selected image URL is persisted to the catalogue only when the corresponding record is saved.
+
+
+---
+
+## Customer discovery, first-visit vs returning-client journey — 2026-10-16
+
+This is an additive improvement to the existing product. Preserve the working homepage, treatment catalogue, appointment validation/availability, request persistence, request reference, account features, Admin queue, and status/confirmation boundary. Do not replace working flows wholesale; inspect the exact current implementation and retain a rollback-friendly, minimal diff.
+
+### Product discovery
+- Make treatment discovery easy from the homepage: prominent search, visible links to actual active catalogue categories, curated starting points, and a clear consultation path for customers who do not know what they need.
+- Search is for finding and comparing options, not silently selecting the first match or submitting a booking. Show matching treatments with published price/duration and clear view/request actions.
+- Category navigation must use the real Admin-managed active categories and lead to correctly filtered treatment listings. Keep an “All treatments” path and visible selected-filter state.
+- Reduce competing homepage sections without deleting useful clinic information, products or genuine published offers. Prioritise understanding the treatment range and the next action.
+- Treat Baymard's homepage/category/search research as UX guidance, not a claim that this clinic's own conversion or usability has been measured.
+
+### First visit vs returning client vs authenticated account
+These are three distinct concepts; do not conflate them:
+1. **First visit** is a customer-reported care/visit history choice, not an authentication state.
+2. **Returning client** is a customer-reported visit history choice and may affect eligibility for an explicitly published offer. It does not prove that the customer is signed in or identify their previous requests.
+3. **Signed-in customer** is a verified Firebase identity. Their existing account/history should be reused; they must not be treated as a new guest or sent through onboarding again.
+
+### Required appointment flow
+- A customer can browse and submit a first appointment request as a guest. Do not require account creation, Google, email, password or PWA installation to request a visit.
+- For an unauthenticated first-time guest: capture the minimum necessary contact/appointment details; persist the request; show a clear success state with its reference and “request received / pending clinic review” wording; then offer optional account securing/linking so history is easier to find later.
+- For a customer already signed in to My Tripple S: selecting “Request this treatment” or “Request another visit” must continue directly into a prefilled new request flow. Do not show a gate that says “Your My Tripple S account comes first” and require the customer to navigate to the account page, then start over. Preserve the selected treatment and authenticated identity; prefill known name/phone/email where available, allow editing, and do not ask the customer to authenticate again.
+- For a returning client who is not signed in: let them request as a guest, with a clear option to sign in to an existing account before submitting if they want their history attached. Do not imply the “Returning client” choice alone retrieves or links old history.
+- After successful request submission by an already authenticated customer, show the request reference and next steps, and refresh the account's request history so the new request is visible. Do not route them through first-time Google setup.
+- When a guest later secures their profile, preserve the original request reference and link history only through a verified, secure ownership/linking process. Never silently merge two Firebase identities or expose another account's bookings. If Google belongs to an existing account, explain the identity/history limitation and provide a safe recovery/linking path rather than claiming that histories were merged.
+- Avoid duplicate submissions on refresh, back navigation or repeated taps. Retain the server's validation, transactional slot reservation, error handling, and status semantics.
+- A request is not a confirmed appointment. Keep “request received”, clinic review, confirmation and payment states distinct.
+
+### Account and security requirements
+- Keep My Tripple S customer features and existing private journal/garden data working while fixing booking continuity.
+- Customer booking history must be read from server-verified identity and must not be exposed by a client-supplied UID or contact details alone.
+- Review the authenticated account's relationship to the `/api/bookings` and `/api/customer/bookings` paths. Ensure newly submitted bookings are attached to the correct verified UID and immediately appear in that same account.
+- Do not weaken Firebase rules, customer identity checks or Admin authorization to make onboarding easier. Do not delete guest requests or overwrite unrelated client history during account linking.
+- Preserve separate Admin access and customer access. Customer sign-in must never grant Admin privileges.
+
+### Acceptance criteria
+1. From a treatment page, an unauthenticated customer can request a visit and receives one saved request, a reference, and honest pending-review wording.
+2. After that guest request, optional Google account setup is offered; declining it does not lose the request.
+3. A signed-in customer selecting a treatment reaches the request form with that treatment selected, without an account-first blocking screen or a second login/onboarding step.
+4. A signed-in customer can submit another request with known contact fields sensibly prefilled; the request is saved once against their verified UID and appears in My Tripple S history without restarting the journey.
+5. First visit / returning client selection remains a visit-history declaration and is not used as a substitute for authentication.
+6. An unauthenticated returning client can continue as a guest or explicitly sign in; no false promise is made that prior history is automatically recovered.
+7. Guest-to-account linking preserves request history only after verified ownership; existing-account conflicts are handled without silent account merging or data loss.
+8. Existing availability/slot conflict checks, booking reference, treatment/price/duration snapshots, admin queue, and request-versus-confirmation wording continue to work.
+9. Search/category discovery changes do not remove active services, Admin-managed content, or existing working navigation.
+10. Run TypeScript, lint and production build; inspect the diff; test customer journeys, authenticated/guest separation, duplicate-submit protection, and account history. Mark real Firebase/deployed/device tests NOT RUN unless actually executed.
