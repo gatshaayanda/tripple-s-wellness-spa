@@ -12,7 +12,7 @@ export default function TreatmentsPage() {
 
   useEffect(() => {
     void Promise.all([getPublicServices(), getPublicServiceCategories()])
-      .then(([items, headings]) => { const activeHeadings = headings.filter(item => item.active).map(item => item.name); setCategories(activeHeadings); setServices(items.filter(item => item.active && activeHeadings.includes(item.category))); })
+      .then(([items, headings]) => { const activeHeadings = headings.filter(item => item.active).map(item => item.name); setCategories(activeHeadings); setServices(items.filter(item => item.active && activeHeadings.includes(item.category))); const requestedCategory = new URLSearchParams(window.location.search).get("category"); if (requestedCategory && activeHeadings.includes(requestedCategory)) setCategory(requestedCategory); })
       .catch(() => setServices([]))
       .finally(() => setLoading(false));
   }, []);
@@ -44,6 +44,7 @@ export default function TreatmentsPage() {
           {!loading && services.length > 0 && (
             <div className="catalogTools" aria-label="Treatment filters">
               <div className="filterChips" role="group" aria-label="Treatment categories">
+                <button type="button" className={category === "All" ? "filterChip active" : "filterChip"} onClick={() => setCategory("All")}>All treatments</button>
                 {categories.map((item) => (
                   <button key={item} type="button" className={category === item ? "filterChip active" : "filterChip"} onClick={() => setCategory(item)}>
                     {item}
