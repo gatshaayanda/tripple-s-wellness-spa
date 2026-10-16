@@ -59,7 +59,7 @@ export default function BookForm() {
         });
         if (!response.ok) return;
         const profile = await response.json() as { name?: string; phone?: string; email?: string };
-        if (cancelled) return;
+        if (cancelled || auth.currentUser?.uid !== user.uid) return;
         // Saved contact details take precedence over provider data because the customer may
         // have corrected their preferred name or WhatsApp number on an earlier request.
         setCustomerName(profile.name || user.displayName || googleProfile?.displayName || "");
