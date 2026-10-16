@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     const db = getAdminDb();
     const [profileSnap, bookingsSnap] = await Promise.all([
       db.collection("customerProfiles").doc(customer.uid).get(),
-      db.collection("bookingRequests").where("customerUid", "==", customer.uid).limit(20).get(),
+      db.collection("bookingRequests").where("customerUid", "==", customer.uid).get(),
     ]);
     const saved = profileSnap.data() ?? {};
     const bookings = bookingsSnap.docs
