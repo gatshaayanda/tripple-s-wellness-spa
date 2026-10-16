@@ -721,3 +721,12 @@ These are three distinct concepts; do not conflate them:
 8. Existing availability/slot conflict checks, booking reference, treatment/price/duration snapshots, admin queue, and request-versus-confirmation wording continue to work.
 9. Search/category discovery changes do not remove active services, Admin-managed content, or existing working navigation.
 10. Run TypeScript, lint and production build; inspect the diff; test customer journeys, authenticated/guest separation, duplicate-submit protection, and account history. Mark real Firebase/deployed/device tests NOT RUN unless actually executed.
+
+
+## Customer contact continuity fix — 2026-10-16
+
+- The booking form hydrates authenticated customers from their verified Firebase identity and the UID-scoped `/api/customer/profile` endpoint. Saved profile details take precedence over Google provider name/email so customer corrections persist; Google does not supply WhatsApp/mobile numbers.
+- `GET /api/customer/profile` requires a verified customer token and returns only that UID's saved profile plus a fallback to their own recent booking details. Responses are private/no-store.
+- Every authenticated booking transaction stores the submitted name, phone, and available email in that same UID's `customerProfiles/{uid}` document alongside the booking. Guest booking remains available; customer history is not merged across Firebase UIDs.
+- Acceptance criteria: signed-in customer sees known contact fields prefilled; saved name/phone/email survive subsequent visits; first authenticated booking seeds the profile; guest requests still work without authentication; profile reads reject missing/invalid tokens; booking history and slot transaction semantics remain unchanged.
+- Verification status: source changes only until CI and real authenticated Firebase/deployed flows are executed. Do not claim live profile persistence from source inspection alone.
