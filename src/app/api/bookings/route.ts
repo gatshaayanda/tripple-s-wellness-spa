@@ -76,6 +76,16 @@ export async function POST(request: NextRequest) {
       if(hasLiveConflict)throw new Error("SLOT_TAKEN");
       const payload = { createdAt:new Date().toISOString(), ...(customer?{customerUid:customer.uid}:{}), name, phone, ...(email?{email}:{}), ...(serviceId?{serviceId}:{}), serviceNameSnapshot:String(service?.name??"Consultation / help choosing"), ...(service?{priceSnapshot:String(service.price??""),durationSnapshot:String(service.duration??duration+" min")}:{durationSnapshot:duration+" min"}), preferredDate:date, preferredTime:time, clientType, status:"NEW", paymentStatus:"PAYMENT_PENDING", ...(message?{message}:{}), ...(discount?{discountCodeSnapshot:String(discount.code),discountAmountSnapshot:discountAmount,...(finalPrice?{finalPriceSnapshot:finalPrice}:{})}:{}) };
       tx.create(idRef,payload);
+      if (customer) {
+        const profileRef = db.collection("customerProfiles").doc(customer.uid);
+        tx.set(profileRef, {
+          uid: customer.uid,
+          name,
+          phone,
+          ...(email ? { email } : {}),
+          updatedAt: new Date().toISOString(),
+        }, { merge: true });
+      }
       for (let i=0;i<reservationRefs.length;i++) tx.set(reservationRefs[i],{date,time:occupied[i],bookingRequestId:idRef.id,kind:"booking-request",createdAt:new Date().toISOString()});
     });
     return NextResponse.json({id:idRef.id,reference:idRef.id.slice(0,8).toUpperCase(),discountAmount,finalPrice},{status:201});
