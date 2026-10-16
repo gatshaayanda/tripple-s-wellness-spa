@@ -1,4 +1,4 @@
-const CACHE_NAME="tripple-s-spa-shell-v3";
+const CACHE_NAME="tripple-s-spa-shell-v4";
 const APP_SHELL=["/","/treatments","/book","/admin","/offline","/icon.svg","/manifest.webmanifest"];
 try {
  importScripts("https://www.gstatic.com/firebasejs/11.9.0/firebase-app-compat.js","https://www.gstatic.com/firebasejs/11.9.0/firebase-messaging-compat.js");
