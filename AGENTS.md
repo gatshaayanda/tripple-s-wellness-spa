@@ -751,3 +751,11 @@ These are three distinct concepts; do not conflate them:
 - Test bulk selection, category filtering, selection reset, exact price, fixed amount, percentage changes, rounding, invalid/negative values, zero selected records, partial persistence failures, and ensuring unselected records remain unchanged.
 - Verify booking snapshots and payment records remain unchanged after catalogue edits.
 - Run TypeScript, lint, production build, inspect the diff, and then perform authenticated Firebase/deployed and mobile QA. Source changes alone do not prove runtime persistence. Record any unexecuted checks as NOT RUN.
+
+
+## Admin catalogue navigation and pricing — acceptance criteria
+- Treatment catalogue is searchable by name, category and description, filterable by category, and paginated in groups of 12; changing search/filter resets to page one and empty results provide a clear-filters action.
+- Product catalogue is searchable and paginated in groups of 12 with a clear-search action for empty results.
+- Bulk price update is visibly labeled **Bulk update prices** in both Treatments and Products. It remains preview-first, selection-based, and must not modify historical booking snapshots.
+- Treatment editor keeps core fields visible while assessment, preparation and aftercare fields are grouped under a collapsed optional section.
+- Verify on mobile and desktop: search, category filter, page controls, modal entry/cancel, selected bulk price preview, persistence failures, and no changes to unselected records.
