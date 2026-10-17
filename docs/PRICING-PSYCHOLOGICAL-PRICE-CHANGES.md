@@ -3,7 +3,7 @@
 Branch: `chore/seed-psychological-pricing`
 
 ## Rule applied to seed data
-Existing seeded treatment and product prices were reduced by **P5** each, retaining any `from` prefix. This changes round prices to endings such as `95`, `945`, `1,195`, and `1,995`. This is a proposed pricing-format pass, not a clinical/business approval of the underlying amounts.
+Treatment prices were adjusted by **P5** where applicable, retaining any `from` prefix. The nine existing facial treatments priced at P495 remain at P495; the new Hydro Facial is P95. Product prices are unchanged. This changes round prices to endings such as `95`, `945`, `1,195`, and `1,995`. This is a proposed pricing-format pass, not a clinical/business approval of the underlying amounts.
 
 ## New seed entry
 - **Hydro Facial:** set to **P95** as requested; it is the lowest-priced seeded facial option.
@@ -13,15 +13,15 @@ Existing seeded treatment and product prices were reduced by **P5** each, retain
 
 | Treatment | Previous seeded price | New seeded price | Reduction |
 |---|---:|---:|---:|
-| Deep Cleansing Facial | P250 | P245 | P5 |
-| Hydrafacial + Hydro Jelly Mask | P400 | P395 | P5 |
-| Dermaplaning | P350 | P345 | P5 |
-| LED Light Therapy | P200 | P195 | P5 |
-| Brightening Facial | P450 | P445 | P5 |
-| Anti-Acne Facial | P350 | P345 | P5 |
-| Chemical Peels | from P950 | from P945 | P5 |
-| Hydrating Facial | P350 | P345 | P5 |
-| Sensitive Skin Facial | P300 | P295 | P5 |
+| Deep Cleansing Facial | P495 | P495 | P0 (unchanged) |
+| Hydrafacial + Hydro Jelly Mask | P495 | P495 | P0 (unchanged) |
+| Dermaplaning | P495 | P495 | P0 (unchanged) |
+| LED Light Therapy | P495 | P495 | P0 (unchanged) |
+| Brightening Facial | P495 | P495 | P0 (unchanged) |
+| Anti-Acne Facial | P495 | P495 | P0 (unchanged) |
+| Chemical Peels | P495 | P495 | P0 (unchanged) |
+| Hydrating Facial | P495 | P495 | P0 (unchanged) |
+| Sensitive Skin Facial | P495 | P495 | P0 (unchanged) |
 | Microneedling | P1,400 | P1,395 | P5 |
 | Microneedling + Exosomes | P2,000 | P1,995 | P5 |
 | PRP Skin Rejuvenation | P1,800 | P1,795 | P5 |
@@ -73,21 +73,15 @@ Existing seeded treatment and product prices were reduced by **P5** each, retain
 | Back Facial | P400 | P395 | P5 |
 | Décolletage Treatments | P450 | P445 | P5 |
 
-## Product seed changes
+## Product catalogue
 
-| Product | Previous seeded price | New seeded price | Reduction |
-|---|---:|---:|---:|
-| Dark Spot Serum | P1,200 | P1,195 | P5 |
-| Vitamin C Serum | P950 | P945 | P5 |
-| Complexion Corrector Cream | P2,000 | P1,995 | P5 |
-| Anti-Acne Serum | P950 | P945 | P5 |
-| Retinol Serum | P1,300 | P1,295 | P5 |
+Product prices are intentionally unchanged by this treatment-only pricing task.
 
 ## P295 prices
 Prices already ending in 95 remain unchanged. The audio's examples consistently describe reducing round prices by P5 (for example P200 → P195, P800 → P795, P1,200 → P1,195, and P1,300 → P1,295). The transcript does not establish a separate P295 → P195 change, so no P100 reduction is applied.
 
 ## Important: seed data versus saved catalogue
-These edits update the code's seed catalogue. The app deliberately preserves existing Firestore/admin-managed records, so this commit does **not** automatically overwrite prices already saved in Firebase. Apply the intended changes through Admin > Treatments/Products (bulk update by P5 where appropriate) after reviewing this list. Historical booking price snapshots remain unchanged.
+These edits update the code's seed catalogue. The app deliberately preserves existing Firestore/admin-managed records, so this commit does **not** automatically overwrite prices already saved in Firebase. Historical booking price snapshots remain unchanged. The deployed catalogue still needs QA against saved Firestore records.
 
 ## Category wording
 The seeded category label is now **Medical Weight Loss, Visible Weight Loss & Body Contouring**. The category document ID is unchanged.
