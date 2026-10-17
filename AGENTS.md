@@ -759,3 +759,10 @@ These are three distinct concepts; do not conflate them:
 - Bulk price update is visibly labeled **Bulk update prices** in both Treatments and Products. It remains preview-first, selection-based, and must not modify historical booking snapshots.
 - Treatment editor keeps core fields visible while assessment, preparation and aftercare fields are grouped under a collapsed optional section.
 - Verify on mobile and desktop: search, category filter, page controls, modal entry/cancel, selected bulk price preview, persistence failures, and no changes to unselected records.
+
+
+## Public catalogue price consistency — acceptance criteria
+- In legacy catalogue compatibility mode, public service loading overlays saved active Firestore records onto matching seed records by document ID. Saved prices and other saved fields must win over seed defaults; missing seed records retain the existing fallback behavior and custom records remain included.
+- Public landing-page search and treatment listings must reflect a successful admin price edit/bulk price update without requiring a catalogue migration or changing historical booking/payment snapshots.
+- When public client code changes, increment the service-worker shell cache version so installed PWAs can fetch updated JavaScript rather than reusing stale cached bundles.
+- QA: update one existing seeded treatment price through admin bulk pricing; verify the saved price in Admin, the landing-page treatment search result, and the full treatment menu after refresh and in an installed PWA. Verify unselected treatments are unchanged.

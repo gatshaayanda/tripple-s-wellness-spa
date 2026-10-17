@@ -38,12 +38,26 @@ export async function getPublicServices(): Promise<ServiceRecord[]> {
     const [snapshot, catalogueState] = await Promise.all([getDocs(query(servicesCollection, where("active", "==", true))), getDoc(doc(db, "settings", "catalogueState"))]);
     const state = catalogueState.data() ?? {};
     if (Number(state.serviceCatalogVersion ?? 0) < 2) {
+      // Preserve the legacy seed fallback for records not yet present in Firestore,
+      // but prefer the saved active Firestore record when it shares a seed ID.
+      // Without this overlay, admin price edits appear saved but public pages keep
+      // displaying the hard-coded seed price until the catalogue migration finishes.
       const seedIds = new Set(trippleSServiceSeed.map(item => item.id));
-      const custom = snapshot.docs
-        .filter(item => !legacyTrippleSServiceSeedIds.includes(item.id) && !seedIds.has(item.id))
-        .map(item => ({ id: item.id, ...(item.data() as Omit<ServiceRecord, "id">) }))
+      const savedRecords = snapshot.docs.map(item => ({
+        id: item.id,
+        ...(item.data() as Omit<ServiceRecord, "id">),
+      }));
+      const savedById = new Map(savedRecords.map(item => [item.id, item]));
+      const seeded = trippleSServiceSeed
+        .map(seed => {
+          const saved = savedById.get(seed.id);
+          return saved ? { ...seed, ...saved } : seed;
+        })
         .filter(item => item.active);
-      return [...trippleSServiceSeed, ...custom];
+      const custom = savedRecords
+        .filter(item => !legacyTrippleSServiceSeedIds.includes(item.id) && !seedIds.has(item.id))
+        .filter(item => item.active);
+      return [...seeded, ...custom];
     }
     if (snapshot.empty) return state.servicesManaged === true ? [] : trippleSServiceSeed;
     return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ServiceRecord, "id">) })).filter((item) => item.active);
