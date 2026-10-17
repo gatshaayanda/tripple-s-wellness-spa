@@ -83,11 +83,11 @@ Existing seeded treatment and product prices were reduced by **P5** each, retain
 | Anti-Acne Serum | P950 | P945 | P5 |
 | Retinol Serum | P1,300 | P1,295 | P5 |
 
-## Special P295 → P195 instruction
-The separately mentioned **P295 → P195** change is a P100 reduction, not the P5 psychological-pricing adjustment. No existing seed entry had a P295 price before this change, so this special reduction has **not** been assigned to a particular treatment or product. Please identify the exact item before applying that exception in the live catalogue.
+## P295 prices
+Prices already ending in 95 remain unchanged. The audio's examples consistently describe reducing round prices by P5 (for example P200 → P195, P800 → P795, P1,200 → P1,195, and P1,300 → P1,295). The transcript does not establish a separate P295 → P195 change, so no P100 reduction is applied.
 
 ## Important: seed data versus saved catalogue
-These edits update the code's seed catalogue. The app deliberately preserves existing Firestore/admin-managed records, so this commit does **not** automatically overwrite prices already saved in Firebase. Apply the intended changes through Admin > Treatments/Products (bulk update by P5 where appropriate, then the explicit exceptions) after reviewing this list. Historical booking price snapshots remain unchanged.
+These edits update the code's seed catalogue. The app deliberately preserves existing Firestore/admin-managed records, so this commit does **not** automatically overwrite prices already saved in Firebase. Apply the intended changes through Admin > Treatments/Products (bulk update by P5 where appropriate) after reviewing this list. Historical booking price snapshots remain unchanged.
 
 ## Category wording
-The seeded category label is now **Weight Loss, Visible Weight Loss & Body Contouring**. The category document ID is unchanged.
+The seeded category label is now **Medical Weight Loss, Visible Weight Loss & Body Contouring**. The category document ID is unchanged.
