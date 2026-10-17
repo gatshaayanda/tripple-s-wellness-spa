@@ -349,3 +349,15 @@
 
 /* Safe deletion and preview-first bulk catalogue pricing. */
 .buttonDanger{background:#8d352b!important;color:#fff!important;border:1px solid #8d352b!important}.buttonDanger:hover:not(:disabled){background:#742a22!important}.bulkPriceSelection{display:grid;gap:8px;border:1px solid var(--line);border-radius:8px;padding:12px;max-height:42vh;overflow:auto;background:#fff}.bulkPriceSelectionHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:8px;border-bottom:1px solid var(--line)}.bulkPriceSelectionHeader strong{font-size:.84rem}.bulkPriceSelectionHeader .button{font-size:.75rem;padding:8px 10px}.bulkPriceRow{display:grid;grid-template-columns:20px minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #eee9e1;cursor:pointer}.bulkPriceRow:last-child{border-bottom:0}.bulkPriceRow input{width:18px;height:18px;accent-color:var(--gold)}.bulkPriceRow span{display:grid;gap:4px;min-width:0}.bulkPriceRow strong{font-size:.88rem;overflow-wrap:anywhere}.bulkPriceRow small{font-size:.76rem;color:var(--muted);line-height:1.4}.bulkPriceRow b{font-size:.86rem;text-align:right;white-space:nowrap}.bulkPriceSummary{padding:12px;border-radius:6px;background:var(--soft);font-size:.84rem;line-height:1.5;color:var(--muted)}@media(max-width:520px){.bulkPriceRow{grid-template-columns:20px minmax(0,1fr)}.bulkPriceRow b{grid-column:2;text-align:left}.bulkPriceSelectionHeader{align-items:flex-start;flex-direction:column}}
+
+/* Admin catalogue navigation: keep long catalogues scannable and editing forms focused. */
+.catalogueTools{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:0 0 16px;padding:14px;background:#fbfaf7;border:1px solid var(--line);border-radius:5px}
+.catalogueTools label{display:grid;gap:6px;font-size:.78rem;font-weight:800;color:var(--muted)}
+.catalogueTools input,.catalogueTools select{min-height:44px;border:1px solid var(--line);border-radius:4px;padding:10px 12px;background:#fff;color:var(--ink);min-width:0}
+.catalogueSearch{flex:1 1 280px}.catalogueCategory{flex:0 1 250px}.catalogueCount{font-size:.8rem;color:var(--muted);font-weight:700;padding:0 2px 12px;white-space:nowrap}
+.cataloguePagination{display:flex;align-items:center;justify-content:center;gap:14px;padding:18px 0 2px;color:var(--muted);font-size:.85rem;font-weight:800}
+.optionalTreatmentDetails{border:1px solid var(--line);border-radius:4px;padding:12px;background:#fbfaf7}
+.optionalTreatmentDetails summary{cursor:pointer;display:flex;justify-content:space-between;gap:12px;font-weight:800;list-style-position:inside}
+.optionalTreatmentDetails summary span{color:var(--muted);font-size:.76rem;font-weight:700}
+.optionalTreatmentDetails>div{display:grid;gap:15px;padding-top:16px}
+@media(max-width:560px){.catalogueTools{align-items:stretch}.catalogueSearch,.catalogueCategory{flex-basis:100%}.catalogueCount{padding:2px 0}.cataloguePagination{gap:8px;flex-wrap:wrap}.cataloguePagination .button{padding:10px 13px}}
