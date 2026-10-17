@@ -777,3 +777,9 @@ These are three distinct concepts; do not conflate them:
 - Detect common social embedded browsers and provide an external-browser handoff that preserves the current URL, plus a copy-link/manual fallback. This is not proof of successful handoff on every device.
 - Service-worker updates wait for user confirmation before replacing an already active worker; show an explicit refresh action rather than silently reloading a customer mid-flow.
 - Acceptance gates: TypeScript, lint, production build; inspect manifest/icon requirements; verify service-worker cache contents and private-route exclusion; test native install prompt, dismissed/unavailable fallback, embedded-browser handoff, update activation, offline public browsing, online-only booking receipt, and Android/iOS real-device behavior. Mark unexecuted integration/device checks NOT RUN.
+
+
+### PWA verification gap observed on 2026-10-17
+
+- The manifest currently advertises only the existing SVG icon. Per Chromium install criteria, explicit 192×192 and 512×512 icons still need to be verified/provided before calling native installability fully verified. Do not invent raster asset paths or claim the native install prompt will fire until those assets and the manifest are tested.
+- Current tool evidence: Vercel check for the QA branch is failing with the deployment/build-rate-limit status. This is an infrastructure limit, not a passing build and not evidence of a source-code failure. TypeScript, lint, production build, browser integration, and device tests remain NOT RUN in this session.
