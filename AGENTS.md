@@ -730,3 +730,24 @@ These are three distinct concepts; do not conflate them:
 - Every authenticated booking transaction stores the submitted name, phone, and available email in that same UID's `customerProfiles/{uid}` document alongside the booking. Guest booking remains available; customer history is not merged across Firebase UIDs.
 - Acceptance criteria: signed-in customer sees known contact fields prefilled; saved name/phone/email survive subsequent visits; first authenticated booking seeds the profile; guest requests still work without authentication; profile reads reject missing/invalid tokens; booking history and slot transaction semantics remain unchanged.
 - Verification status: source changes only until CI and real authenticated Firebase/deployed flows are executed. Do not claim live profile persistence from source inspection alone.
+
+
+---
+
+## Admin deletion confirmation and bulk pricing — 2026-10-17
+
+### Destructive actions
+- Treatment, product and permitted category deletions require a record-specific confirmation modal before any delete call. The dialog names the item, explains that the action cannot be undone from the screen, and offers a non-destructive cancel/keep action. Never preselect deletion.
+- Disable duplicate delete submissions while an operation is pending. Update the visible list only after persistence succeeds and report failures without pretending the record was removed. Preserve category dependency checks and historical booking/payment snapshots.
+
+### Bulk catalogue pricing
+- Preserve individual price editing. Treatments and products also support an explicit bulk price update workflow with individual selection, select/clear visible items, and category filtering for treatments.
+- Supported operations: set an exact price, increase/decrease by a fixed amount, or increase/decrease by a percentage. Display current and proposed prices for every item before applying changes. Use Botswana pula formatting and reject negative or invalid outcomes.
+- The user explicitly selects the records to change and confirms after reviewing the preview. Filter changes reset selection so a hidden selection cannot be accidentally included. Bulk writes run per record; accurately report partial failures and update local state only for successful writes.
+- Bulk catalogue price updates must not rewrite existing booking price/service snapshots or payment records. The clinic owner remains the authority on approved prices; the application calculates changes but does not prescribe prices.
+
+### Acceptance criteria and evidence
+- Test keep/cancel and confirm deletion for treatments, products, and empty categories; test busy/duplicate clicks, failed deletes, and category dependency restrictions.
+- Test bulk selection, category filtering, selection reset, exact price, fixed amount, percentage changes, rounding, invalid/negative values, zero selected records, partial persistence failures, and ensuring unselected records remain unchanged.
+- Verify booking snapshots and payment records remain unchanged after catalogue edits.
+- Run TypeScript, lint, production build, inspect the diff, and then perform authenticated Firebase/deployed and mobile QA. Source changes alone do not prove runtime persistence. Record any unexecuted checks as NOT RUN.
