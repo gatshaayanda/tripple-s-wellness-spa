@@ -57,7 +57,7 @@ export const trippleSServiceSeed: ServiceSeed[] = [
     "name": "Deep Cleansing Facial",
     "category": "Facials & Skin Treatments",
     "description": "A professional facial treatment. Details and suitability are confirmed by the Tripple S clinical team.",
-    "price": "P245",
+    "price": "P495",
     "duration": "30 min (confirm)",
     "active": true,
     "assessmentNote": "Appointment duration is provisional and requires clinic confirmation."
@@ -78,7 +78,7 @@ export const trippleSServiceSeed: ServiceSeed[] = [
     "name": "Hydrafacial + Hydro Jelly Mask",
     "category": "Facials & Skin Treatments",
     "description": "A professional facial treatment. Details and suitability are confirmed by the Tripple S clinical team.",
-    "price": "P395",
+    "price": "P495",
     "duration": "30 min (confirm)",
     "active": true,
     "consultationRequired": true,
@@ -89,7 +89,7 @@ export const trippleSServiceSeed: ServiceSeed[] = [
     "name": "Dermaplaning",
     "category": "Facials & Skin Treatments",
     "description": "A professional facial treatment. Details and suitability are confirmed by the Tripple S clinical team.",
-    "price": "P345",
+    "price": "P495",
     "duration": "30 min",
     "active": true
   },
@@ -98,7 +98,7 @@ export const trippleSServiceSeed: ServiceSeed[] = [
     "name": "LED Light Therapy",
     "category": "Facials & Skin Treatments",
     "description": "A professional facial treatment. Details and suitability are confirmed by the Tripple S clinical team.",
-    "price": "P195",
+    "price": "P495",
     "duration": "30 min (confirm)",
     "active": true,
     "assessmentNote": "Appointment duration is provisional and requires clinic confirmation."
@@ -108,7 +108,7 @@ export const trippleSServiceSeed: ServiceSeed[] = [
     "name": "Brightening Facial",
     "category": "Facials & Skin Treatments",
     "description": "A professional facial treatment. Details and suitability are confirmed by the Tripple S clinical team.",
-    "price": "P445",
+    "price": "P495",
     "duration": "30 min (confirm)",
     "active": true,
     "assessmentNote": "Appointment duration is provisional and requires clinic confirmation."
@@ -118,7 +118,7 @@ export const trippleSServiceSeed: ServiceSeed[] = [
     "name": "Anti-Acne Facial",
     "category": "Facials & Skin Treatments",
     "description": "A professional facial treatment. Details and suitability are confirmed by the Tripple S clinical team.",
-    "price": "P345",
+    "price": "P495",
     "duration": "30 min (confirm)",
     "active": true,
     "consultationRequired": true,
@@ -129,7 +129,7 @@ export const trippleSServiceSeed: ServiceSeed[] = [
     "name": "Chemical Peels",
     "category": "Facials & Skin Treatments",
     "description": "A professional facial treatment. Details and suitability are confirmed by the Tripple S clinical team.",
-    "price": "from P945",
+    "price": "P495",
     "duration": "30 min (confirm)",
     "active": true,
     "consultationRequired": true,
@@ -140,7 +140,7 @@ export const trippleSServiceSeed: ServiceSeed[] = [
     "name": "Hydrating Facial",
     "category": "Facials & Skin Treatments",
     "description": "A professional facial treatment. Details and suitability are confirmed by the Tripple S clinical team.",
-    "price": "P345",
+    "price": "P495",
     "duration": "30 min (confirm)",
     "active": true,
     "assessmentNote": "Appointment duration is provisional and requires clinic confirmation."
@@ -150,7 +150,7 @@ export const trippleSServiceSeed: ServiceSeed[] = [
     "name": "Sensitive Skin Facial",
     "category": "Facials & Skin Treatments",
     "description": "A professional facial treatment. Details and suitability are confirmed by the Tripple S clinical team.",
-    "price": "P295",
+    "price": "P495",
     "duration": "30 min (confirm)",
     "active": true,
     "consultationRequired": true,
@@ -695,9 +695,9 @@ export const trippleSServiceSeed: ServiceSeed[] = [
 ];
 export const legacyTrippleSServiceSeedIds: string[] = ["hydration-drip","weight-management-drip","clear-complexion-drip","lumiglow-skin-brightening","premium-glow-drip","ultimate-beauty-wellness","anti-sweat-injection","skin-boosters","prp-facial","microneedling","skin-repair-microneedling","pigmentation-peel","hydra-facial","deep-cleansing-led","anti-acne-peel","glow-up-peel","blemish-peel","dermaplaning","skin-tag-removal","lipolytic-10","lipolytic-20","lipolytic-30","sauna-45","sauna-60","skin-consultation"];
 export const trippleSProductSeed = [
-  { id: "dark-spot-serum", name: "Dark Spot Serum", description: "30ml · Product information from the official Tripple S website.", size: "30ml", price: "P1,195", active: true, purchaseMethod: "Enquire with Tripple S" },
-  { id: "vitamin-c-serum", name: "Vitamin C Serum", description: "30ml · Product information from the official Tripple S website.", size: "30ml", price: "P945", active: true, purchaseMethod: "Enquire with Tripple S" },
-  { id: "complexion-corrector-cream", name: "Complexion Corrector Cream", description: "100ml · Product information from the official Tripple S website.", size: "100ml", price: "P1,995", active: true, purchaseMethod: "Enquire with Tripple S" },
-  { id: "anti-acne-serum", name: "Anti-Acne Serum", description: "30ml · Product information from the official Tripple S website.", size: "30ml", price: "P945", active: true, purchaseMethod: "Enquire with Tripple S" },
-  { id: "retinol-serum", name: "Retinol Serum", description: "Product information from the official Tripple S website.", size: "—", price: "P1,295", active: true, purchaseMethod: "Enquire with Tripple S" },
+  { id: "dark-spot-serum", name: "Dark Spot Serum", description: "30ml · Product information from the official Tripple S website.", size: "30ml", price: "P1,200", active: true, purchaseMethod: "Enquire with Tripple S" },
+  { id: "vitamin-c-serum", name: "Vitamin C Serum", description: "30ml · Product information from the official Tripple S website.", size: "30ml", price: "P950", active: true, purchaseMethod: "Enquire with Tripple S" },
+  { id: "complexion-corrector-cream", name: "Complexion Corrector Cream", description: "100ml · Product information from the official Tripple S website.", size: "100ml", price: "P2,000", active: true, purchaseMethod: "Enquire with Tripple S" },
+  { id: "anti-acne-serum", name: "Anti-Acne Serum", description: "30ml · Product information from the official Tripple S website.", size: "30ml", price: "P950", active: true, purchaseMethod: "Enquire with Tripple S" },
+  { id: "retinol-serum", name: "Retinol Serum", description: "Product information from the official Tripple S website.", size: "—", price: "P1,300", active: true, purchaseMethod: "Enquire with Tripple S" },
 ];
