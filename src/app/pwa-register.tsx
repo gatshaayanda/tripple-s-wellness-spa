@@ -48,7 +48,7 @@ export default function PwaRegister() {
   const [handoffFallback, setHandoffFallback] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [installed, setInstalled] = useState(false);
-  const [installable, setInstallable] = useState(false);
+  const [privateRoute, setPrivateRoute] = useState(false);
   const [showInstallHelp, setShowInstallHelp] = useState(false);
   const [platform, setPlatform] = useState<Platform>("desktop");
   const [updateReady, setUpdateReady] = useState(false);
@@ -71,17 +71,15 @@ export default function PwaRegister() {
 
     const standalone = isStandalone() || window.__trippleSPwa?.installed === true;
     setInstalled(standalone);
+    setPrivateRoute(isPrivateRoute());
     if (!standalone && !(externalMarker === "1" && !embeddedBrowser) && !isPrivateRoute()) {
       setInAppBrowser(embeddedBrowser);
     }
-    setInstallable(Boolean(window.__trippleSPwa?.deferredPrompt));
 
     const online = () => setOffline(false);
     const offlineNow = () => setOffline(true);
-    const installableEvent = () => setInstallable(Boolean(window.__trippleSPwa?.deferredPrompt));
     const appInstalled = () => {
       setInstalled(true);
-      setInstallable(false);
       setShowInstallHelp(false);
       setInAppBrowser(null);
       setHandoffFallback(false);
@@ -89,7 +87,6 @@ export default function PwaRegister() {
 
     window.addEventListener("online", online);
     window.addEventListener("offline", offlineNow);
-    window.addEventListener("tripple:pwa-installable", installableEvent);
     window.addEventListener("tripple:pwa-installed", appInstalled);
 
     let updateListener: (() => void) | undefined;
@@ -141,7 +138,6 @@ export default function PwaRegister() {
     return () => {
       window.removeEventListener("online", online);
       window.removeEventListener("offline", offlineNow);
-      window.removeEventListener("tripple:pwa-installable", installableEvent);
       window.removeEventListener("tripple:pwa-installed", appInstalled);
       if ("serviceWorker" in navigator) {
         if (updateListener && registrationRef.current) registrationRef.current.removeEventListener("updatefound", updateListener);
@@ -197,7 +193,6 @@ export default function PwaRegister() {
       await deferred.prompt();
       const choice = await deferred.userChoice;
       window.__trippleSPwa!.deferredPrompt = null;
-      setInstallable(false);
       if (choice.outcome === "accepted") {
         setInstalled(true);
         setShowInstallHelp(false);
@@ -221,8 +216,8 @@ export default function PwaRegister() {
     waiting.postMessage({ type: "SKIP_WAITING" });
   }, []);
 
-  const showGate = Boolean(inAppBrowser) && !installed && !isPrivateRoute();
-  const showInstall = !showGate && !installed && !isStandalone() && !isPrivateRoute();
+  const showGate = Boolean(inAppBrowser) && !installed && !privateRoute;
+  const showInstall = !showGate && !installed && !privateRoute;
 
   return (
     <>
