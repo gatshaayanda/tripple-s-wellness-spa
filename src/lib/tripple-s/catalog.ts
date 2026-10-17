@@ -22,7 +22,7 @@ export const trippleSCategorySeed: ServiceCategoryRecord[] = [
   },
   {
     "id": "body-contouring-weight-management",
-    "name": "Weight Loss, Visible Weight Loss & Body Contouring",
+    "name": "Medical Weight Loss, Visible Weight Loss & Body Contouring",
     "active": true,
     "order": 4
   },
@@ -342,7 +342,7 @@ export const trippleSServiceSeed: ServiceSeed[] = [
   {
     "id": "body-contouring-non-invasive",
     "name": "Body Contouring (non-invasive)",
-    "category": "Body Contouring & Weight Management",
+    "category": "Medical Weight Loss, Visible Weight Loss & Body Contouring",
     "description": "A body contouring or weight-management service, subject to assessment.",
     "price": "P1,495",
     "duration": "30 min (confirm)",
@@ -353,7 +353,7 @@ export const trippleSServiceSeed: ServiceSeed[] = [
   {
     "id": "fat-reduction-treatments",
     "name": "Fat Reduction Treatments",
-    "category": "Body Contouring & Weight Management",
+    "category": "Medical Weight Loss, Visible Weight Loss & Body Contouring",
     "description": "A body contouring or weight-management service, subject to assessment.",
     "price": "from P1,195",
     "duration": "30 min (confirm)",
@@ -364,7 +364,7 @@ export const trippleSServiceSeed: ServiceSeed[] = [
   {
     "id": "body-firming-treatments",
     "name": "Body Firming Treatments",
-    "category": "Body Contouring & Weight Management",
+    "category": "Medical Weight Loss, Visible Weight Loss & Body Contouring",
     "description": "A body contouring or weight-management service, subject to assessment.",
     "price": "P1,195",
     "duration": "30 min (confirm)",
@@ -375,7 +375,7 @@ export const trippleSServiceSeed: ServiceSeed[] = [
   {
     "id": "cellulite-treatments",
     "name": "Cellulite Treatments",
-    "category": "Body Contouring & Weight Management",
+    "category": "Medical Weight Loss, Visible Weight Loss & Body Contouring",
     "description": "A body contouring or weight-management service, subject to assessment.",
     "price": "P995",
     "duration": "30 min (confirm)",
@@ -386,7 +386,7 @@ export const trippleSServiceSeed: ServiceSeed[] = [
   {
     "id": "tummy-contouring",
     "name": "Tummy Contouring",
-    "category": "Body Contouring & Weight Management",
+    "category": "Medical Weight Loss, Visible Weight Loss & Body Contouring",
     "description": "A body contouring or weight-management service, subject to assessment.",
     "price": "P1,495",
     "duration": "30 min (confirm)",
@@ -397,7 +397,7 @@ export const trippleSServiceSeed: ServiceSeed[] = [
   {
     "id": "weight-management-consultations",
     "name": "Weight Management Consultations",
-    "category": "Body Contouring & Weight Management",
+    "category": "Medical Weight Loss, Visible Weight Loss & Body Contouring",
     "description": "A body contouring or weight-management service, subject to assessment.",
     "price": "P395",
     "duration": "30 min",
@@ -407,7 +407,7 @@ export const trippleSServiceSeed: ServiceSeed[] = [
   {
     "id": "body-measurements-progress-monitoring",
     "name": "Body Measurements & Progress Monitoring",
-    "category": "Body Contouring & Weight Management",
+    "category": "Medical Weight Loss, Visible Weight Loss & Body Contouring",
     "description": "A body contouring or weight-management service, subject to assessment.",
     "price": "P295",
     "duration": "30 min (confirm)",
@@ -418,7 +418,7 @@ export const trippleSServiceSeed: ServiceSeed[] = [
   {
     "id": "personalised-nutrition-plans",
     "name": "Personalised Nutrition Plans",
-    "category": "Body Contouring & Weight Management",
+    "category": "Medical Weight Loss, Visible Weight Loss & Body Contouring",
     "description": "A body contouring or weight-management service, subject to assessment.",
     "price": "P795",
     "duration": "30 min (confirm)",
