@@ -39,7 +39,7 @@ function getInAppBrowser() {
 }
 
 function isPrivateRoute() {
-  return /^\/(admin|account)(\/|$)/i.test(window.location.pathname);
+  return typeof window !== "undefined" && /^\/(admin|account)(\/|$)/i.test(window.location.pathname);
 }
 
 export default function PwaRegister() {
