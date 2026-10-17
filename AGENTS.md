@@ -766,3 +766,14 @@ These are three distinct concepts; do not conflate them:
 - Public landing-page search and treatment listings must reflect a successful admin price edit/bulk price update without requiring a catalogue migration or changing historical booking/payment snapshots.
 - When public client code changes, increment the service-worker shell cache version so installed PWAs can fetch updated JavaScript rather than reusing stale cached bundles.
 - QA: update one existing seeded treatment price through admin bulk pricing; verify the saved price in Admin, the landing-page treatment search result, and the full treatment menu after refresh and in an installed PWA. Verify unselected treatments are unchanged.
+
+
+## PWA hardening checkpoint — 2026-10-17
+
+- Keep the current Tripple S product and customer/admin workflows as the golden baseline; PWA work stays isolated on a QA branch until explicitly approved.
+- The service worker must never cache `/admin`, `/account`, `/api/*`, or dynamic Next.js data. Only cache explicitly public home/treatment/booking/offline pages, public assets, and fingerprinted `/_next/static/*` assets.
+- Never use private admin HTML as an offline fallback. Offline messaging must distinguish previously loaded public content from appointment requests actually received by the clinic.
+- Capture `beforeinstallprompt` before React hydration, invoke the native prompt directly from the Install button when available, and show platform-specific guidance only when the native prompt is unavailable or dismissed. Website use must not require installation.
+- Detect common social embedded browsers and provide an external-browser handoff that preserves the current URL, plus a copy-link/manual fallback. This is not proof of successful handoff on every device.
+- Service-worker updates wait for user confirmation before replacing an already active worker; show an explicit refresh action rather than silently reloading a customer mid-flow.
+- Acceptance gates: TypeScript, lint, production build; inspect manifest/icon requirements; verify service-worker cache contents and private-route exclusion; test native install prompt, dismissed/unavailable fallback, embedded-browser handoff, update activation, offline public browsing, online-only booking receipt, and Android/iOS real-device behavior. Mark unexecuted integration/device checks NOT RUN.
