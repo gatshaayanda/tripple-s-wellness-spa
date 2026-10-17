@@ -58,7 +58,7 @@ const pwaInstallBridge = [
   "  window.__trippleSPwa.installed = true;",
   "  window.dispatchEvent(new Event('tripple:pwa-installed'));",
   "});",
-].join("\\n");
+].join("\n");
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
