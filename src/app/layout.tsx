@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import Script from "next/script";
 import PwaRegister from "@/app/pwa-register";
 import UsageTracker from "@/components/UsageTracker";
 import "./globals.css";
@@ -45,9 +46,26 @@ export const viewport: Viewport = {
   colorScheme: "light",
 };
 
+const pwaInstallBridge = [
+  "window.__trippleSPwa = window.__trippleSPwa || { deferredPrompt: null, installed: false };",
+  "window.addEventListener('beforeinstallprompt', function (event) {",
+  "  event.preventDefault();",
+  "  window.__trippleSPwa.deferredPrompt = event;",
+  "  window.dispatchEvent(new Event('tripple:pwa-installable'));",
+  "});",
+  "window.addEventListener('appinstalled', function () {",
+  "  window.__trippleSPwa.deferredPrompt = null;",
+  "  window.__trippleSPwa.installed = true;",
+  "  window.dispatchEvent(new Event('tripple:pwa-installed'));",
+  "});",
+].join("\\n");
+
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
+      <head>
+        <Script id="tripple-s-pwa-install-bridge" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: pwaInstallBridge }} />
+      </head>
       <body>
         <PwaRegister />
         <UsageTracker />
